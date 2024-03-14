@@ -1,0 +1,327 @@
+#!/bin/sh
+#
+# Default PATH differs between shells, and is not automatically exported
+# by klibc dash.  Make it consistent.
+  	export PATH=/sbin:/usr/sbin:/bin:/usr/bin
+
+# Set modprobe env
+	export MODPROBE_OPTIONS="-qb"
+
+# Export relevant Volumio variables for dropping into a shell (breaks, debugging, panics)
+	export BOOT_DELAY=5
+	export BOOT_PARTITION=
+	export DATA_PARTITION=
+	export IMAGE_PARTITION=
+	export BOOT_DEVICE="mmcblk0"
+	export HW_DEVICE="undefined"
+	export OVERLAY_VERSION=">=V22"
+	export SQUASH_FILE="/volumio_current.sqsh"
+	export IMAGE_PARTITION=
+	export NEWINIT=/sbin/init
+	export REBOOT_MODE="normal"
+	export SPLASH="false"
+	export USEKMSG="yes"
+	export DATADEV=
+	export UUIDFMT=
+	export debug=
+	export panic=
+	export log_output=
+	export break=
+
+	source scripts/functions
+	source scripts/volumio-functions
+	[ -f scripts/custom-functions ] && source scripts/custom-functions
+
+	[ -d /dev ] || mkdir -m 0755 /dev
+	[ -d /root ] || mkdir -m 0700 /root
+	[ -d /sys ] || mkdir /sys
+	[ -d /proc ] || mkdir /proc
+	[ -d /tmp ] || mkdir /tmp
+	mkdir -p /var/lock
+	mount -t sysfs -o noexec,nosuid sysfs /sys
+	mount -t proc -o nodev,noexec,nosuid proc /proc
+	
+# shellcheck disable=SC2013
+	for x in $(cat /proc/cmdline); do
+		case $x in
+		initramfs.clear)
+			clear
+			;;
+		quiet)
+			quiet=y
+			;;
+		esac
+	done
+
+	if [ "$quiet" != "y" ]; then
+		quiet=n
+		echo "Volumio initramfs loading, please wait..."
+	fi
+	export quiet
+
+	# Note that this only becomes /dev on the real filesystem if udev's scripts
+	# are used; which they will be, but it's worth pointing out
+	mount -t devtmpfs -o nosuid,mode=0755 udev /dev
+
+	# Prepare the /dev directory
+	[ ! -h /dev/fd ] && ln -s /proc/self/fd /dev/fd
+	[ ! -h /dev/stdin ] && ln -s /proc/self/fd/0 /dev/stdin
+	[ ! -h /dev/stdout ] && ln -s /proc/self/fd/1 /dev/stdout
+	[ ! -h /dev/stderr ] && ln -s /proc/self/fd/2 /dev/stderr
+
+	mkdir /dev/pts
+	mount -t devpts -o noexec,nosuid,gid=5,mode=0620 devpts /dev/pts || true
+
+# Export the dpkg architecture
+	export DPKG_ARCH=
+	. /conf/arch.conf
+
+	maybe_break start $LINENO
+
+# Parse the kernel command
+#
+	for p in $(cat /proc/cmdline); do
+		key=${p%%=*}
+		value=${p#*=}
+
+		case $key in
+		imgpart)
+			IMAGE_PARTITION=$value
+			;;
+		bootpart)
+			BOOT_PARTITION=$value
+			;;
+		datapart)
+			DATA_PARTITION=$value
+			;;
+		imgfile)
+			SQUASH_FILE=$value
+			;;
+		dps)
+			DPS=$value
+			;;
+		genpnames)
+			DO_GEN=yes
+			;;
+		bootdelay)
+			BOOT_DELAY=$value
+			;;
+		bootdev)
+			BOOT_DEVICE=$value
+			;;
+		bootconfig)
+			BOOT_CONFIG=$value
+			;;
+		hwdevice)
+			HW_DEVICE=$value
+			;;
+		use_kmsg)
+			USEKMSG=$value
+			;;
+		reboot)
+	# normal|mcu
+			REBOOT_MODE=$value
+			;;
+		esac
+	done
+
+# Handle debug and panic settings separately
+#
+	for p in $(cat /proc/cmdline); do
+		key=${p%%=*}
+		value=${p#*=}
+		case $key in
+		debug)
+			debug=y
+			quiet=n
+			if [ ${USEKMSG} == yes ]; then
+				log_output=/dev/kmsg
+			else
+				log_output=/run/initramfs/initramfs.debug
+			fi
+			set -x
+			;;
+		panic=*)
+			panic="${x#panic=}"
+			case ${panic} in
+			*[![:digit:].]*)
+				panic=
+				;;
+			esac
+			;;
+		break)
+			break=$value
+			;;
+		esac
+	done
+
+	mount -t tmpfs -o "nodev,noexec,nosuid,size=${RUNSIZE:-10%},mode=0755" tmpfs /run
+	mkdir -m 0755 /run/initramfs
+
+	if [ -n "$log_output" ]; then
+		exec >$log_output 2>&1
+		unset log_output
+	fi
+	maybe_break top $LINENO
+
+	# Don't do log messages here to avoid confusing graphical boots
+	run_scripts /scripts/init-top
+
+# Load driver modules from conf/modules
+#
+	maybe_break modules $LINENO
+
+	[ "$quiet" != "y" ] && log_begin_msg "Loading essential drivers"
+	[ -n "${netconsole}" ] && /sbin/modprobe netconsole netconsole="${netconsole}"
+	load_modules
+	mdev -s
+	[ "$quiet" != "y" ] && log_end_msg
+	starttime="$(_uptime)"
+	starttime=$((starttime + 1)) # round up
+	export starttime
+
+	if [ "$ROOTDELAY" ]; then
+		sleep "$ROOTDELAY"
+	fi
+
+	maybe_break premount $LINENO
+	[ "$quiet" != "y" ] && log_begin_msg "Running /scripts/init-premount"
+	run_scripts /scripts/init-premount
+	[ "$quiet" != "y" ] && log_end_msg
+
+	maybe_break mount $LINENO
+
+	# Always load local (since this might be needed for /etc or
+	# /usr, irrespective of the boot script used to mount the rootfs).
+	mount_top
+	mount_premount
+
+#
+# Initialise squashfile parameter and partition devices
+# - imgfile (squashfile) must always be supplied
+# - partition names can be generated with supplied bootdevice and separator (seldomly used)
+# - only imgpart may be supplied as /dev/mmcblk<n>p2 only (or nvme device partition equivalent)
+# - only imgpart may be supplied as /dev/sd<x>
+# in the above two cases, bootpart and datapart will be derived from imgpart's base device name
+#
+# - imgpart may be supplied as UUID= or LABEL=, in that case bootpart and datapart must also be supplied
+# - in case UUID= is used, bootconfig must also be supplied.
+#
+# As a result, bootdev ($BOOT_DEVICE), bootpart (BOOT_PARTITION, imgpart (IMAGE_PARTITION
+# and datapart ($DATA_PARTITION) will be parsed and validated.
+
+	maybe_break init-part-pars $LINENO
+
+	init_partition_params
+
+# Wait until partition devices are ready
+# (Some devices can be slow, increase bootdelay when necessary)
+#
+	wait_for_partitions_ready
+
+	maybe_break progress $LINENO
+
+# initialisation finished
+
+	IMAGEMNT="/mnt/imgpart"
+	BOOTMNT="/mnt/boot"
+	USBMNT="/mnt/usb"
+
+# Permanently mount image and boot partition
+	[ -d /mnt ] || mkdir /mnt
+	[ -d "${IMAGEMNT}" ] || mkdir "${IMAGEMNT}"
+	[ -d "${BOOTMNT}" ] || mkdir "${BOOTMNT}"
+
+# Mount partition with the squash file
+	mount -t vfat "${BOOT_PARTITION}" "${BOOTMNT}"
+	mount -t ext4 "${IMAGE_PARTITION}" "${IMAGEMNT}"
+
+# In case of a gpt boot partition: move the backup table when not done yet
+# This function is also safe for non-gpt boot partitions (it will not trigger a mismatch).
+#
+	maybe_break backup_gpt $LINENO
+
+	move_backup_gpt_table
+
+#
+#
+	maybe_break krnl-archive $LINENO
+
+	create_kernel_archive
+
+	if [ ! -z "${BOOT_DELAY}" ]; then
+		log_begin_msg "Doing a ${BOOT_DELAY} second delay here to give kernel load a headstart"
+		sleep ${BOOT_DELAY}
+		log_end_msg
+	fi
+
+# ROOTFS update on usb disk?
+#
+	maybe_break search-for-firmw $LINENO
+
+	search_for_firmware_update_rootfs
+
+# Factory reset file on usb or in boot partition?
+# ===============================================
+	maybe_break search-fact-reset $LINENO
+
+	search_for_factory_reset
+
+# Kernel update rollback ?
+# ========================
+	maybe_break krnl-rollbck $LINENO
+
+	search_for_kernel_rollback
+
+# Kernel update?
+#
+	maybe_break krnl-upd $LINENO
+
+	process_kernel_update
+
+# Resize data partition?
+#
+	maybe_break resize-data $LINENO
+
+	resize_datapartition
+
+	maybe_break mnt-overlayfs $LINENO
+
+# Create writable overlay from squashfs and a data partition folder
+#
+	mount_overlay_fs
+
+# Process fstab
+#
+	maybe_break modfstab $LINENO
+
+	modify_fstab
+
+# All done, switch to the permanent init process
+#
+
+# Mount cleanup
+	mount_bottom
+	maybe_break bottom $LINENO
+	[ "$quiet" != "y" ] && log_begin_msg "Running /scripts/init-bottom"
+	# We expect udev's init-bottom script to move /dev to ${rootmnt}/dev
+	run_scripts /scripts/init-bottom
+	[ "$quiet" != "y" ] && log_end_msg
+# Move /run to the root so our logs are there when we boot
+#
+	mount -n -o move /run ${NEWROOT}/run
+
+
+# umount boot partition
+  umount ${BOOTMNT}
+  rm -r ${BOOTMNT}
+
+	maybe_break switch-root $LINENO
+# Move virtual filesystems over to the real filesystem
+	mount -n -o move /sys ${NEWROOT}/sys
+	mount -n -o move /proc ${NEWROOT}/proc
+
+	log_success_msg "Finish initramfs, continue booting Volumio"
+	exec switch_root ${NEWROOT} ${NEWINIT}
+	echo "Something went badly wrong in the initramfs."
+	panic "Please file a bug on Volumio forum."

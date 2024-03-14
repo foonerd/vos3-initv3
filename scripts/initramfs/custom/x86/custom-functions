@@ -1,0 +1,12 @@
+#!/bin/sh
+#
+
+validate_imgfile_imgpart() {
+  log_simple_msg "Squash image" $SQUASH_FILE
+  log_simple_msg "Boot partition" $BOOT_PARTITION
+  log_simple_msg "Image partition" $IMAGE_PARTITION
+  log_simple_msg "Data partition" $DATA_PARTITION
+  
+  BOOT_DEVICE=/dev/$(lsblk -no PKNAME "${BOOT_PARTITION}")
+  log_simple_msg "Boot device" $BOOT_DEVICE  
+}

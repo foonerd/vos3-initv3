@@ -1,3 +1,0 @@
-## Initramfs-Splash
-image=volumio.png
-fullscreen=0

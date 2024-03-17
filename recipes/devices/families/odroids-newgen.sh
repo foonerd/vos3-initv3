@@ -27,7 +27,7 @@ BOOT_END=64
 BOOT_TYPE=msdos          # msdos or gpt
 BOOT_USE_UUID=yes        # Add UUID to fstab
 INIT_TYPE="initv2" # init{.x86|.nextarm|v2}
-#INIT_TYPE="init.nextarm"
+#INIT_TYPE="initv3"
 
 # Modules that will be added to intramsfs
 MODULES=("overlay" "squashfs" "nls_cp437")

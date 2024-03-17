@@ -1,15 +1,4 @@
-#!/bin/sh
-#
-
-log_simple_msg() {
-#
-# Logs a simple message without formatting
-#
-# Arguments
-#   all ($*) Message string
-#
-	_log_msg "%s\\n" "$*"
-}
+# -*- shell-script -*-
 
 maybe_break() {
 #
@@ -28,7 +17,7 @@ maybe_break() {
 	case ",${break?}," in
 	*,$1,*)
 		if [ "$1" = "cmdline" ] || [ "$1" = "modules" ]; then
-      log_simple_msg "Modules not loaded yet, trying to load minimum drivers for keyboards"
+      log_msg "Modules not loaded yet, trying to load minimum drivers for keyboards"
 	    load_keyboard_drivers
 		fi
 		panic "======== Breakpoint '$1' reached at line $2"
@@ -157,12 +146,12 @@ validate_imgfile_imgpart() {
   fi
   log_end_msg
 
-  log_simple_msg "Squash image" $SQUASH_FILE
-  log_simple_msg "Boot partition" $BOOT_PARTITION
-  log_simple_msg "Image partition" $IMAGE_PARTITION
-  log_simple_msg "Data partition" $DATA_PARTITION
-  log_simple_msg "Boot device" $BOOT_DEVICE
-  [ -z "${UUIDFMT}" ] || log_simple_msg "Boot config file" $BOOT_CONFIG
+  log_msg "Squash image" $SQUASH_FILE
+  log_msg "Boot partition" $BOOT_PARTITION
+  log_msg "Image partition" $IMAGE_PARTITION
+  log_msg "Data partition" $DATA_PARTITION
+  log_msg "Boot device" $BOOT_DEVICE
+  [ -z "${UUIDFMT}" ] || log_msg "Boot config file" $BOOT_CONFIG
   
 }
 
@@ -267,11 +256,11 @@ load_plymouth() {
    echo "[Daemon]
 Theme=volumio
 ShowDelay=0
-DeviceTimeout=8
+DeviceTimeout=5
 " >/usr/share/plymouth/plymouthd.defaults 
     mkdir -m 0755 /run/plymouth
     /sbin/plymouthd --mode=boot --attach-to-session --pid-file=/run/plymouth/pid
-    /bin/plymouth --show-splash
+    #/bin/plymouth --show-splash
   fi
 
 }
@@ -290,7 +279,7 @@ for i in 1 2 3 4 5
       mdev -s
     else
 	    log_end_msg
-      log_simple_msg "Block device ${BOOT_DEVICE} ready"
+      log_msg "Block device ${BOOT_DEVICE} ready"
       break
     fi
   done

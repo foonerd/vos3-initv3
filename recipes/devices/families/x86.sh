@@ -127,7 +127,6 @@ write_device_files() {
 }
 EOF
 
-  rm ${ROOTFSMNT}/usr/share/plymouth/themes/volumio/*
   cp -dR volumio/usr/share/plymouth/themes/volumio/* ${ROOTFSMNT}/usr/share/plymouth/themes/volumio
 
   # Headphone detect currently only for atom z8350 with rt5640 codec
@@ -273,7 +272,7 @@ device_chroot_tweaks_pre() {
     touch /boot/ssh
   else
     # No output (use "quiet loglevel=0" and in that order!)
-    kernel_params+=("quiet ${KERNEL_LOGLEVEL} use_kmsg=no") 
+    kernel_params+=("quiet ${KERNEL_LOGLEVEL} use_kmsg=no initramfs.clear") 
   fi
  
 

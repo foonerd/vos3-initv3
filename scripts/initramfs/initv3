@@ -51,21 +51,7 @@ export DPKG_ARCH=
 # Set modprobe env
 export MODPROBE_OPTIONS="-qb"
 
-# Export relevant Volumio variables
-export BOOT_DELAY=5
-export BOOT_PARTITION=
-export DATA_PARTITION=
-export IMAGE_PARTITION=
-export BOOT_DEVICE="mmcblk0"
-export HW_DEVICE="undefined"
-export OVERLAY_VERSION=">=V22"
-export SQUASH_FILE="/volumio_current.sqsh"
-export IMAGE_PARTITION=
-export REBOOT_MODE="normal"
-export DO_GEN=yes
-export USEKMSG="yes"
-
-# Export relevant default variables
+# Export relevant variables
 export ROOT=
 export ROOTDELAY=
 export ROOTFLAGS=
@@ -90,60 +76,18 @@ export fastboot=n
 export forcefsck=n
 export fsckfix=
 
+
 # Bring in the main config
 . /conf/initramfs.conf
 for conf in conf/conf.d/*; do
 	[ -f "${conf}" ] && . "${conf}"
 done
 . /scripts/functions
-. /scripts/volumio-functions
 
 # Parse command line options
 # shellcheck disable=SC2013
 for x in $(cat /proc/cmdline); do
 	case $x in
-	imgpart*)
-		IMAGE_PARTITION=${x#imgpart=}
-		;;
-	bootpart*)
-		BOOT_PARTITION=${x#bootpart=}
-		;;
-	datapart*)
-		DATA_PARTITION=${x#datapart=}
-		;;
-	imgfile*)
-		SQUASH_FILE=${x#imgfile=}
-		;;
-	dps*)
-		DPS=${x#dps=}
-		;;
-	genpnames*)
-		DO_GEN=yes
-		;;
-	bootdelay*)
-		BOOT_DELAY="${x#bootdelay=}"
-		case ${BOOT_DELAY} in
-		*[![:digit:].]*)
-			BOOT_DELAY=
-			;;
-		esac
-		;;
-	bootdev*)
-		BOOT_DEVICE=${x#bootdev=}
-		;;
-	bootconfig*)
-		BOOT_CONFIG=${x#bootconfig}
-		;;
-	hwdevice*)
-		HW_DEVICE=${x#hwdevice=}
-		;;
-	use_kmsg)
-		USEKMSG=${x#use_kmsg=}
-		;;
-		reboot*)
-# normal|mcu
-		REBOOT_MODE=${x#reboot=}
-		;;
 	init=*)
 		init=${x#init=}
 		;;
@@ -313,113 +257,6 @@ if read_fstab_entry /usr; then
 	log_end_msg
 fi
 
-####################### Volumio required - BEGIN #######################
-#
-# Initialise squashfile parameter and partition devices
-# - imgfile (squashfile) must always be supplied
-# - partition names can be generated with supplied bootdevice and separator (seldomly used)
-# - only imgpart may be supplied as /dev/mmcblk<n>p2 only (or nvme device partition equivalent)
-# - only imgpart may be supplied as /dev/sd<x>
-# in the above two cases, bootpart and datapart will be derived from imgpart's base device name
-#
-# - imgpart may be supplied as UUID= or LABEL=, in that case bootpart and datapart must also be supplied
-# - in case UUID= is used, bootconfig must also be supplied.
-#
-# As a result, bootdev ($BOOT_DEVICE), bootpart (BOOT_PARTITION, imgpart (IMAGE_PARTITION
-# and datapart ($DATA_PARTITION) will be parsed and validated.
-
-maybe_break init-part-pars
-
-init_partition_params
-
-# Wait until partition devices are ready
-# (Some devices can be slow, increase bootdelay when necessary)
-#
-wait_for_partitions_ready
-
-maybe_break progress
-
-# initialisation finished
-
-IMAGEMNT="/mnt/imgpart"
-BOOTMNT="/mnt/boot"
-USBMNT="/mnt/usb"
-
-# Permanently mount image and boot partition
-[ -d /mnt ] || mkdir /mnt
-[ -d "${IMAGEMNT}" ] || mkdir "${IMAGEMNT}"
-[ -d "${BOOTMNT}" ] || mkdir "${BOOTMNT}"
-
-# Mount partition with the squash file
-mount -t vfat "${BOOT_PARTITION}" "${BOOTMNT}"
-mount -t ext4 "${IMAGE_PARTITION}" "${IMAGEMNT}"
-
-# In case of a gpt boot partition: move the backup table when not done yet
-# This function is also safe for non-gpt boot partitions (it will not trigger a mismatch).
-#
-maybe_break backup_gpt
-
-move_backup_gpt_table
-
-#
-#
-maybe_break krnl-archive
-
-create_kernel_archive
-
-if [ ! -z "${BOOT_DELAY}" ]; then
-	log_begin_msg "Doing a ${BOOT_DELAY} second delay here to give kernel load a headstart"
-	sleep ${BOOT_DELAY}
-	log_end_msg
-fi
-
-# ROOTFS update on usb disk?
-#
-maybe_break search-for-firmw
-
-search_for_firmware_update_rootfs
-
-# Factory reset file on usb or in boot partition?
-# ===============================================
-maybe_break search-fact-reset
-
-search_for_factory_reset
-
-# Kernel update rollback ?
-# ========================
-maybe_break krnl-rollbck
-
-search_for_kernel_rollback
-
-# Kernel update?
-#
-maybe_break krnl-upd
-
-process_kernel_update
-
-# Resize data partition?
-#
-maybe_break resize-data
-
-resize_datapartition
-
-maybe_break mnt-overlayfs
-
-# Create writable overlay from squashfs and a data partition folder
-#
-mount_overlay_fs
-
-# Process fstab
-#
-maybe_break modfstab
-
-modify_fstab
-
-######################## Volumio required - END ########################
-
-# All done, switch to the permanent init process
-#
-
 # Mount cleanup
 mount_bottom
 nfs_bottom
@@ -459,12 +296,6 @@ maybe_break init
 
 # don't leak too much of env - some init(8) don't clear it
 # (keep init, rootmnt, drop_caps)
-unset BOOT_DELAY=5
-unset OVERLAY_VERSION
-unset REBOOT_MODE
-unset DO_GEN
-unset USEKMSG
-
 unset debug
 unset MODPROBE_OPTIONS
 unset DPKG_ARCH

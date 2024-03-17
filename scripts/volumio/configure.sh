@@ -30,7 +30,6 @@ if [[ ${BUILD:0:3} == arm ]]; then
 fi
 
 # Copy splash, that is utilised for devices with a screen
-cp "${SRC}/volumio/splash/splash.txt" "${ROOTFS}/boot"
 cp "${SRC}/volumio/splash/volumio.png" "${ROOTFS}/boot"
 
 log "Copying misc config/tweaks to rootfs" "info"

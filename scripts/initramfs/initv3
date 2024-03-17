@@ -524,4 +524,4 @@ mount -n -o move /proc ${rootmnt}/proc
 # shellcheck disable=SC2086,SC2094
 exec run-init ${drop_caps} "${rootmnt}" "${init}" "$@" <"${rootmnt}/dev/console" >"${rootmnt}/dev/console" 2>&1
 echo "Something went badly wrong in the initramfs."
-panic "Please file a bug on initramfs-tools."
+panic "Please file a bug on Volumio forum."

@@ -47,6 +47,7 @@ do_resize () {
 }
 
 . /scripts/functions
+. /scripts/volumio-functions
 . /scripts/local
 
 log_begin_msg "Resizing root filesystem...\n\nDepending on storage size and speed, this may take a while."

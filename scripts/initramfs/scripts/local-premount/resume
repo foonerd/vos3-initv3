@@ -20,6 +20,7 @@ if [ -z "${resume?}" ] || [ ! -e /sys/power/resume ]; then
 fi
 
 . /scripts/functions
+. /scripts/volumio-functions
 . /scripts/local
 
 if ! local_device_setup "${resume}" "suspend/resume device" false; then

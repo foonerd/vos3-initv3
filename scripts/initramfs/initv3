@@ -83,6 +83,7 @@ for conf in conf/conf.d/*; do
 	[ -f "${conf}" ] && . "${conf}"
 done
 . /scripts/functions
+. /scripts/volumio-functions
 
 # Parse command line options
 # shellcheck disable=SC2013

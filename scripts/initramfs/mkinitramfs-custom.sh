@@ -95,6 +95,7 @@ done
 
 # For dependency ordered mkinitramfs hook scripts.
 . /usr/share/initramfs-tools/scripts/functions
+. /usr/share/initramfs-tools/scripts/volumio-functions
 . /usr/share/initramfs-tools/hook-functions
 # shellcheck source=/dev/null
 . "${CONFDIR}/initramfs.conf"

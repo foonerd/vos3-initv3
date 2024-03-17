@@ -9,6 +9,7 @@ case "${1}" in
 esac
 
 . /scripts/functions
+. /scripts/volumio-functions
 
 if ! grep -q 'systemd\.run=/boot/firstrun\.sh' /proc/cmdline; then
   exit 0

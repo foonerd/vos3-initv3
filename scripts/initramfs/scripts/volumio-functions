@@ -1,6 +1,6 @@
 # -*- shell-script -*-
 
-maybe_break() {
+maybe_volumio_break() {
 #
 # Enables pre-defined 'init' flow breakpoints by spawning a shell.
 # Breakpoints are specified on the kernel cmdline using the 'break=', comma-separated.
@@ -17,43 +17,25 @@ maybe_break() {
 	case ",${break?}," in
 	*,$1,*)
 		if [ "$1" = "cmdline" ] || [ "$1" = "modules" ]; then
-      log_msg "Modules not loaded yet, trying to load minimum drivers for keyboards"
-	    load_keyboard_drivers
+			# udev is not yet running, so load keyboard drivers
+			if [ "${quiet}" = "y" ]; then
+				opts="-q"
+			else
+				opts="-v"
+			fi
+			/sbin/modprobe ${opts} -a i8042 atkbd ehci-pci ehci-orion \
+				 ehci-hcd ohci-hcd ohci-pci uhci-hcd usbhid xhci \
+				 xhci-pci xhci-hcd
+			sleep 2
+			for modalias in /sys/bus/hid/devices/*/modalias; do
+				if [ -f "${modalias}" ]; then
+					/sbin/modprobe ${opts} -b "$(cat "${modalias}")"
+				fi
+			done
 		fi
 		panic "======== Breakpoint '$1' reached at line $2"
 		;;
 	esac
-}
-
-do_break() {
-#
-# Enables an 'init' flow breakpoint (by spawning a shell), used for debugging only
-# These calls ought to be removed before doing a PR
-#
-# Arguments
-#   $1  line number in calling script
-#
-		panic "Fixed breakpoint created at line $1"
-}
-
-load_keyboard_drivers() {
-#
-
-  if [ "${quiet}" = "y" ]; then
-		opts="-q"
-  else
-    opts="-v"
-  fi
-  modprobe ${opts} -a i8042 atkbd ehci-pci ehci-orion \
-      ehci-hcd ohci-hcd ohci-pci uhci-hcd usbhid xhci \
-      xhci-pci xhci-hcd
-  sleep 2
-  for modalias in /sys/bus/hid/devices/*/modalias; do
-    if [ -f "${modalias}" ]; then
-      modprobe ${opts} -b "$(cat "${modalias}")"
-    fi
-  done
-  mdev -s
 }
 
 init_partition_params() {

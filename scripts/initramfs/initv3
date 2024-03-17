@@ -309,7 +309,7 @@ log_begin_msg "Mounting root file system"
 
 ###################################### DISABLED ######################################
 # These functions are part of standard Debian init. Volumio relies on sqaushfs therefore
-# will not run in root, local nor nfs. Only mount_top is meeded by udev
+# will not run in root, local nor nfs. Only mount_top is meeded by udev.
 # Enable if change is needed.
 # . /scripts/local
 #. /scripts/nfs
@@ -430,7 +430,7 @@ modify_fstab
 #
 ###################################### DISABLED ######################################
 # These functions are part of standard Debian init. Volumio relies on sqaushfs therefore
-# will not try to ready /usr from fstab file.
+# will not try to read /usr from fstab file.
 # Enable if change is needed.
 #if read_fstab_entry /usr; then
 #	log_begin_msg "Mounting /usr file system"
@@ -438,10 +438,14 @@ modify_fstab
 #	log_end_msg
 #fi
 
+###################################### DISABLED ######################################
+# These functions are part of standard Debian init. Volumio relies on sqaushfs therefore
+# will not run in root, local nor nfs. Only mount_bottom is meeded by plymouth and udev.
+# Enable if change is needed.
 # Mount cleanup
 mount_bottom
-nfs_bottom
-local_bottom
+#nfs_bottom
+#local_bottom
 
 maybe_break bottom $LINENO
 [ "$quiet" != "y" ] && log_begin_msg "Running /scripts/init-bottom"

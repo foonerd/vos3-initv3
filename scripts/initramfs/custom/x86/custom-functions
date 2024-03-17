@@ -2,11 +2,11 @@
 #
 
 validate_imgfile_imgpart() {
-  log_msg "Squash image" $SQUASH_FILE
-  log_msg "Boot partition" $BOOT_PARTITION
-  log_msg "Image partition" $IMAGE_PARTITION
-  log_msg "Data partition" $DATA_PARTITION
+  log_begin_msg "Squash image" $SQUASH_FILE && log_end_msg
+  log_begin_msg "Boot partition" $BOOT_PARTITION && log_end_msg
+  log_begin_msg "Image partition" $IMAGE_PARTITION && log_end_msg
+  log_begin_msg "Data partition" $DATA_PARTITION && log_end_msg
   
   BOOT_DEVICE=/dev/$(lsblk -no PKNAME "${BOOT_PARTITION}")
-  log_msg "Boot device" $BOOT_DEVICE  
+  log_begin_msg "Boot device" $BOOT_DEVICE && log_end_msg
 }

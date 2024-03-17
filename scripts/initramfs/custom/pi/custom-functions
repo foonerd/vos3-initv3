@@ -5,9 +5,10 @@ unpack_kernel() {
 # Overruling default kernel unpack
 # Used when block device information (eg. /dev/mmcblk0p1) needs to replaced by UUID
   if [ -z "${UUIDFMT}" ]; then
-    log_msg "Unpacking kernel without cmdline.txt"
+    log_begin_msg "Unpacking kernel without cmdline.txt"
     tar xf ${IMAGE_PARTITION}/kernel_current.tar --exclude=cmdlinux.txt -C ${BOOTMNT}
-    log_msg "Done, replace block device information with discovered UUIDs."
+    log_success_msg
+    log_begin_msg "Done, replace block device information with discovered UUIDs."
     UUID_BOOT=$(blkid -s UUID -o value ${BOOT_PARTITION}
     UUID_IMG=$(blkid -s UUID -o value ${IMAGE_PARTition})
     UUID_DATA=$(blkid -s UUID -o value ${DATA_PARTITION})

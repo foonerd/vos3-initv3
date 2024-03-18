@@ -54,7 +54,7 @@ export MODPROBE_OPTIONS="-qb"
 ################################## Volumio specific ##################################
 # Export Volumio relevant variables
 
-export BOOT_DELAY=5
+export BOOT_DELAY=
 export BOOT_PARTITION=
 export DATA_PARTITION=
 export IMAGE_PARTITION=
@@ -65,7 +65,7 @@ export SQUASH_FILE="/volumio_current.sqsh"
 # export DO_GEN="yes"
 export IMAGE_PARTITION=
 export REBOOT_MODE="normal"
-export SPLASH="false"
+export SPLASH=
 export USEKMSG="yes"
 export DATADEV=
 export UUIDFMT=

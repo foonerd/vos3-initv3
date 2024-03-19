@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2034
+
 ## Setup for Raspberry Pi
 DEVICE_SUPPORT_TYPE="S" # First letter (Community Porting|Supported Officially|OEM)
 DEVICE_STATUS="T"       # First letter (Planned|Test|Maintenance)
@@ -9,6 +10,9 @@ DEBUG_IMAGE="yes"
 BASE="Raspbian"
 ARCH="armhf"
 BUILD="arm"
+
+### Build image with initramfs debug info?
+DEBUG_IMAGE="no"       # yes/no or empty. Also changes SHOW_SPLASH in cmdline.txt
 
 ### Device information
 # Used to identify devices (VOLUMIO_HARDWARE) and keep backward compatibility
@@ -29,8 +33,9 @@ VOLINITUPDATER=yes
 ## Partition info
 BOOT_START=0
 BOOT_END=96
-BOOT_TYPE=msdos  # msdos or gpt
-INIT_TYPE="initv2" # init.{x86/nextarm/nextarm_tvbox}
+BOOT_TYPE=msdos      # msdos or gpt
+BOOT_USE_UUID=no     # Add UUID to fstab
+INIT_TYPE="initv3"   # init{v2,v3}
 
 # Modules that will be added to intramfs
 MODULES=("overlay" "squashfs")
@@ -65,7 +70,7 @@ device_image_tweaks() {
 	# mkdir -p "${ROOTFSMNT}/opt/vc/bin/"
 	# cp -rp "${SRC}"/volumio/opt/vc/bin/* "${ROOTFSMNT}/opt/vc/bin/"
 
-	log "Fixing hostapd.conf"
+	log "Fixing hostapd.conf" "info"
 	cat <<-EOF >"${ROOTFSMNT}/etc/hostapd/hostapd.conf"
 		interface=wlan0
 		driver=nl80211
@@ -84,7 +89,7 @@ device_image_tweaks() {
 		wpa_passphrase=volumio2
 	EOF
 
-	log "Adding archive.raspberrypi debian repo"
+	log "Adding archive.raspberrypi debian repo" "info"
 	cat <<-EOF >"${ROOTFSMNT}/etc/apt/sources.list.d/raspi.list"
 		deb http://archive.raspberrypi.org/debian/ buster main ui
 		# Uncomment line below then 'apt-get update' to enable 'apt-get source'
@@ -96,7 +101,7 @@ device_image_tweaks() {
 	# plugin installs explicitly or through dependencies like
 	# chromium, sense-hat, picamera,...
 	# Using Pin-Priority < 0 prevents installation
-	log "Blocking raspberrypi-bootloader and raspberrypi-kernel"
+	log "Blocking raspberrypi-bootloader and raspberrypi-kernel" "info"
 	cat <<-EOF >"${ROOTFSMNT}/etc/apt/preferences.d/raspberrypi-kernel"
 		Package: raspberrypi-bootloader
 		Pin: release *
@@ -106,9 +111,9 @@ device_image_tweaks() {
 		Pin: release *
 		Pin-Priority: -1
 
-                Package: libraspberrypi0
-                Pin: release *
-                Pin-Priority: -1
+		Package: libraspberrypi0
+		Pin: release *
+		Pin-Priority: -1
 	EOF
 
 	log "Fetching rpi-update" "info"
@@ -123,15 +128,15 @@ device_image_tweaks() {
 device_chroot_tweaks() {
 	log "Running device_image_tweaks" "ext"
 	# rpi-update needs binutils
-	log "Installing binutils for rpi-update"
+	log "Installing binutils for rpi-update" "ext"
 	apt-get update -qq && apt-get -yy install binutils
 }
 
 # Will be run in chroot - Pre initramfs
 # TODO Try and streamline this!
 device_chroot_tweaks_pre() {
-        log "Changing initramfs module config to 'modules=list' to limit volumio.initrd size" "cfg"
-        sed -i "s/MODULES=most/MODULES=list/g" /etc/initramfs-tools/initramfs.conf
+	log "Changing initramfs module config to 'modules=list' to limit volumio.initrd size" "cfg"
+	sed -i "s/MODULES=most/MODULES=list/g" /etc/initramfs-tools/initramfs.conf
 
 	## Define parameters
 	declare -A PI_KERNELS=(
@@ -170,10 +175,10 @@ device_chroot_tweaks_pre() {
 		RpiRepo="https://github.com/raspberrypi/rpi-firmware"
 		RpiRepoApi=${RpiRepo/github.com/api.github.com\/repos}
 		RpiRepoRaw=${RpiRepo/github.com/raw.githubusercontent.com}
-		log "Fetching latest kernel details from ${RpiRepo}"
+		log "Fetching latest kernel details from ${RpiRepo}" "info"
 		RpiGitSHA=$(curl --silent "${RpiRepoApi}/branches/${branch}")
 		readarray -t RpiCommitDetails <<<"$(jq -r '.commit.sha, .commit.commit.message' <<<"${RpiGitSHA}")"
-		log "Rpi latest kernel -- ${RpiCommitDetails[*]}"
+		log "Rpi latest kernel -- ${RpiCommitDetails[*]}" "info"
 		# Parse required info from `uname_string`
 		uname_string=$(curl --silent "${RpiRepoRaw}/${RpiCommitDetails[0]}/uname_string")
 		RpiKerVer=$(awk '{print $3}' <<<"${uname_string}")
@@ -181,8 +186,8 @@ device_chroot_tweaks_pre() {
 		RpiKerRev=$(awk '{print $1}' <<<"${uname_string##*#}")
 		PI_KERNELS[${KERNEL_VERSION}]+="${RpiCommitDetails[0]}|${branch}|${RpiKerRev}"
 		# Make life easier
-		log "Using rpi-update SHA:${RpiCommitDetails[0]} Rev:${RpiKerRev}" "${KERNEL_VERSION}"
-		log "[${KERNEL_VERSION}]=\"${RpiCommitDetails[0]}|${branch}|${RpiKerRev}\"" "debug"
+		log "Using rpi-update SHA:${RpiCommitDetails[0]} Rev:${RpiKerRev}" "${KERNEL_VERSION}" "dbg"
+		log "[${KERNEL_VERSION}]=\"${RpiCommitDetails[0]}|${branch}|${RpiKerRev}\"" "dbg"
 	fi
 
 	# List of custom firmware -
@@ -200,10 +205,10 @@ device_chroot_tweaks_pre() {
 
 	# using rpi-update to fetch and install kernel and firmware
 	log "Adding kernel ${KERNEL_VERSION} using rpi-update" "info"
-	log "Fetching SHA: ${KERNEL_COMMIT} from branch: ${KERNEL_BRANCH}"
+	log "Fetching SHA: ${KERNEL_COMMIT} from branch: ${KERNEL_BRANCH}" "info"
 	echo y | SKIP_BACKUP=1 WANT_32BIT=1 WANT_64BIT=1 WANT_PI4=1 WANT_PI5=0 SKIP_CHECK_PARTITION=1 UPDATE_SELF=0 BRANCH=${KERNEL_BRANCH} /usr/bin/rpi-update "${KERNEL_COMMIT}"
 
-	log "Adding Custom DAC firmware from github" "info"
+	log "Adding Custom firmware from github" "info"
 	for key in "${!CustomFirmware[@]}"; do
 		wget -nv "${CustomFirmware[$key]}" -O "$key.tar.gz" || {
 			log "Failed to get firmware:" "err" "${key}"
@@ -231,12 +236,12 @@ device_chroot_tweaks_pre() {
 	log "Finished Kernel installation" "okay"
 
 	### Other Rpi specific stuff
-	log "Installing fake libraspberrypi0 package"
-        wget -nv  https://github.com/volumio/volumio3-os-static-assets/raw/master/custom-packages/libraspberrypi0/libraspberrypi0_1.20230509-buster-1_armhf.deb
-        dpkg -i libraspberrypi0_1.20230509-buster-1_armhf.deb
-        rm libraspberrypi0_1.20230509-buster-1_armhf.deb
+	log "Installing fake libraspberrypi0 package" "info"
+	wget -nv  https://github.com/volumio/volumio3-os-static-assets/raw/master/custom-packages/libraspberrypi0/libraspberrypi0_1.20230509-buster-1_armhf.deb
+	dpkg -i libraspberrypi0_1.20230509-buster-1_armhf.deb
+	rm libraspberrypi0_1.20230509-buster-1_armhf.deb
 
-        ## Lets update some packages from raspbian repos now
+	## Lets update some packages from raspbian repos now
 	apt-get update && apt-get -y upgrade
 
 	NODE_VERSION=$(node --version)
@@ -258,17 +263,17 @@ device_chroot_tweaks_pre() {
 		if compgen -G "/volumio/customNode/nodejs_*-1unofficial_${arch}.deb" >/dev/null; then
 			# Get rid of armv7 nodejs and pick up the armv6l version
 			if dpkg -s nodejs &>/dev/null; then
-				log "Removing previous nodejs installation from $(command -v node)"
+				log "Removing previous nodejs installation from $(command -v node)" "info"
 				log "Removing Node $(node --version) arm_version: $(node <<<'console.log(process.config.variables.arm_version)')" "info"
 				apt-get -y purge nodejs
 			fi
-			log "Installing Node for ${arch}"
+			log "Installing Node for ${arch}" "info"
 			dpkg -i /volumio/customNode/nodejs_*-1unofficial_${arch}.deb
 			log "Installed Node $(node --version) arm_version: $(node <<<'console.log(process.config.variables.arm_version)')" "info"
 			rm -rf /volumio/customNode
 		fi
 		# Block upgrade of nodejs from raspi repos
-		log "Blocking nodejs upgrades for ${NODE_VERSION}"
+		log "Blocking nodejs upgrades for ${NODE_VERSION}" "info"
 		cat <<-EOF >"${ROOTFSMNT}/etc/apt/preferences.d/nodejs"
 			Package: nodejs
 			Pin: release *
@@ -279,32 +284,32 @@ device_chroot_tweaks_pre() {
 	log "Starting Raspi platform tweaks" "info"
 	plymouth-set-default-theme volumio
 
-	log "Adding gpio & spi group and permissions"
+	log "Adding gpio & spi group and permissions" "info"
 	groupadd -f --system gpio
 	groupadd -f --system spi
 
-	log "Disabling sshswitch"
+	log "Disabling sshswitch" "info"
 	rm /etc/sudoers.d/010_pi-nopasswd
 	unlink /etc/systemd/system/multi-user.target.wants/sshswitch.service
 	rm /lib/systemd/system/sshswitch.service
 
-	log "Changing external ethX priority"
+	log "Changing external ethX priority" "info"
 	# As built-in eth _is_ on USB (smsc95xx or lan78xx drivers)
 	sed -i 's/KERNEL==\"eth/DRIVERS!=\"smsc95xx\", DRIVERS!=\"lan78xx\", &/' /etc/udev/rules.d/99-Volumio-net.rules
 
-	log "Adding volumio to gpio,i2c,spi group"
+	log "Adding volumio to gpio,i2c,spi group" "info"
 	usermod -a -G gpio,i2c,spi,input volumio
 
 	log "Handling Video Core quirks" "info"
 
-	log "Adding /opt/vc/lib to linker"
+	log "Adding /opt/vc/lib to linker" "info"
 	cat <<-EOF >/etc/ld.so.conf.d/00-vmcs.conf
 		/opt/vc/lib
 	EOF
-	log "Updating LD_LIBRARY_PATH"
+	log "Updating LD_LIBRARY_PATH" "info"
 	ldconfig
 
-	log "Symlinking vc bins"
+	log "Symlinking vc bins" "info"
 	# https://github.com/RPi-Distro/firmware/blob/debian/debian/libraspberrypi-bin.links
 	VC_BINS=("edidparser" "raspistill" "raspivid" "raspividyuv" "raspiyuv"
 		"tvservice" "vcdbg" "vcgencmd" "vchiq_test"
@@ -313,96 +318,140 @@ device_chroot_tweaks_pre() {
 		ln -s "/opt/vc/bin/${bin}" "/usr/bin/${bin}"
 	done
 
-	log "Fixing vcgencmd permissions"
+	log "Fixing vcgencmd permissions"  "info"
 	cat <<-EOF >/etc/udev/rules.d/10-vchiq.rules
 		SUBSYSTEM=="vchiq",GROUP="video",MODE="0660"
 	EOF
 
+	# Rename gpiomem in udev rules if kernel is equal or greater than 6.1.54
+	if [ "$MAJOR_VERSION" -gt 6 ] || { [ "$MAJOR_VERSION" -eq 6 ] && { [ "$MINOR_VERSION" -gt 1 ] || [ "$MINOR_VERSION" -eq 1 ] && [ "$PATCH_VERSION" -ge 54 ]; }; }; then
+		log "Rename gpiomem in udev rules"  "info"
+		sed -i 's/bcm2835-gpiomem/gpiomem/g' /etc/udev/rules.d/99-com.rules
+	fi
+
 	log "Setting bootparms and modules" "info"
-	log "Enabling i2c-dev module"
+	log "Enabling i2c-dev module" "info"
 	echo "i2c-dev" >>/etc/modules
 
-	log "Writing config.txt file"
+	log "Writing config.txt file" "info"
 	cat <<-EOF >/boot/config.txt
+		### DO NOT EDIT THIS FILE ###
+		### APPLY CUSTOM PARAMETERS TO userconfig.txt ###
 		initramfs volumio.initrd
+		gpu_mem=128
+		gpu_mem_256=32
+		gpu_mem_512=32
+		gpu_mem_1024=128
+		max_usb_current=1
+		[pi5]
+		usb_max_current_enable=1
+		[all]
+		include volumioconfig.txt
+		include userconfig.txt
+	EOF
+
+	log "Writing volumioconfig.txt file" "info"
+	cat <<-EOF >/boot/volumioconfig.txt
+		### DO NOT EDIT THIS FILE ###
+		### APPLY CUSTOM PARAMETERS TO userconfig.txt ###
 		[cm4]
 		dtoverlay=dwc2,dr_mode=host
+		[pi5]
+		dtoverlay=vc4-kms-v3d-pi5
+		# dtparam=uart0_console # Disabled by default
+		dtparam=nvme
+		dtparam=pciex1_gen=2
 		[all]
 		arm_64bit=0
-		gpu_mem=32
-		max_usb_current=1
 		dtparam=audio=on
 		audio_pwm_mode=2
 		dtparam=i2c_arm=on
 		disable_splash=1
 		hdmi_force_hotplug=1
 		force_eeprom_read=0
-
-		include userconfig.txt
 	EOF
 
-	log "Writing cmdline.txt file"
-	KERNEL_LOGLEVEL="loglevel=0" # Default to KERN_EMERG
-	DISABLE_PN="net.ifnames=0"
+	log "Writing cmdline.txt file" "info"
+
 	# Build up the base parameters
+	# Prepare kernel_params placeholder
 	kernel_params=(
-		# Boot screen stuff
-		"splash" "plymouth.ignore-serial-consoles"
-		# Raspi USB controller params
-		# TODO: Check if still required!
-		"dwc_otg.fiq_enable=1" "dwc_otg.fiq_fsm_enable=1"
-		"dwc_otg.fiq_fsm_mask=0xF" "dwc_otg.nak_holdoff=1"
-		# Output console device and options.
-		"quiet" "console=serial0,115200" "console=tty1"
-		# Image params
-		"imgpart=/dev/mmcblk0p2" "imgfile=/volumio_current.sqsh"
-		# Wait for root device
-		"rootwait" "bootdelay=5"
-		# I/O scheduler
-		"elevator=noop"
-		# Disable linux logo during boot
-		"logo.nologo"
-		# Disable cursor
-		"vt.global_cursor_default=0"
 	)
+	# Prepare Volumio splash, quiet, debug and loglevel.
+	# In init, "splash" controls Volumio logo, but in debug mode it will still be present
+	# In init, "quiet" had no influence (unused), but in init{v2,v3} it will prevent initrd console output
+	# So, when debugging, remove it and update loglevel to value: 8
+	if [[ $DEBUG_IMAGE == yes ]]; then
+		log "Debug image: remove splash from cmdline.txt" "cfg"
+		SHOW_SPLASH="" # Debug removed
+		log "Debug image: remove quiet from cmdline.txt" "cfg"
+		KERNEL_QUIET="" # Debug removed
+		log "Debug image: change loglevel to value: 8 in cmdline.txt" "cfg"
+		KERNEL_LOGLEVEL="loglevel=8" # Default Debug
+	else
+		log "Default image: add splash to cmdline.txt" "cfg"
+		SHOW_SPLASH="splash" # Default splash enabled
+		log "Default image: add quiet to cmdline.txt" "cfg"
+		KERNEL_QUIET="quiet" # Default quiet enabled
+		log "Default image: change loglevel to value: 0 in cmdline.txt" "cfg"
+		KERNEL_LOGLEVEL="loglevel=0" # Default to KERN_EMERG
+	fi
+	kernel_params+=("${SHOW_SPLASH}")
+	kernel_params+=("${KERNEL_QUIET}")
+
+	# Boot screen stuff	
+	kernel_params+=("plymouth.ignore-serial-consoles")
+	# Raspi USB controller params
+	# TODO: Check if still required!
+	# Prevent Preempt-RT lock up
+	kernel_params+=("dwc_otg.fiq_enable=1" "dwc_otg.fiq_fsm_enable=1" "dwc_otg.fiq_fsm_mask=0xF" "dwc_otg.nak_holdoff=1")
+	# Output console device and options.
+	kernel_params+=("console=serial0,115200" "console=tty1")
+	# Image params
+	kernel_params+=("imgpart=/dev/mmcblk0p2" "imgfile=/volumio_current.sqsh")
+	# A quirk of Linux on ARM that may result in suboptimal performance
+	kernel_params+=("pcie_aspm=off" "pci=pcie_bus_safe")
+	# Wait for root device
+	kernel_params+=("rootwait" "bootdelay=5")
+	# I/O scheduler
+	kernel_params+=("elevator=noop")
+	# Disable linux logo during boot
+	kernel_params+=("logo.nologo")
+	# Disable cursor
+	kernel_params+=("vt.global_cursor_default=0")
 
 	# Buster tweaks
+	DISABLE_PN="net.ifnames=0"
 	kernel_params+=("${DISABLE_PN}")
 	# ALSA tweaks
 	kernel_params+=("snd-bcm2835.enable_compat_alsa=${compat_alsa}" "snd_bcm2835.enable_hdmi=1" "snd_bcm2835.enable_headphones=1")
 
+	# Further debug changes
 	if [[ $DEBUG_IMAGE == yes ]]; then
-		log "Creating debug image" "wrn"
-		log "Adding Serial Debug parameters"
+		log "Creating debug image" "dbg"
+		log "Adding Serial Debug parameters" "dbg"
 		echo "include debug.txt" >>/boot/config.txt
 		cat <<-EOF >/boot/debug.txt
 			# Enable serial console for boot debugging
 			enable_uart=1
 			dtoverlay=pi3-miniuart-bt
 		EOF
-		KERNEL_LOGLEVEL="loglevel=8" # KERN_DEBUG
-		log "Enabling SSH"
+		log "Enabling SSH" "dbg"
 		touch /boot/ssh
 		if [[ -f /boot/bootcode.bin ]]; then
-			log "Enable serial boot debug"
+			log "Enable serial boot debug" "dbg"
 			sed -i -e "s/BOOT_UART=0/BOOT_UART=1/" /boot/bootcode.bin
 		fi
 	fi
 
 	kernel_params+=("${KERNEL_LOGLEVEL}")
-	log "Setting ${#kernel_params[@]} Kernel params:" "${kernel_params[*]}"
+	log "Setting ${#kernel_params[@]} Kernel params:" "${kernel_params[*]}" "info"
 	cat <<-EOF >/boot/cmdline.txt
 		${kernel_params[@]}
 	EOF
-	# In init, "quiet" had no influence (unused), but in initv2 it will prevent initrd console output
-	# So, when debugging, remove it
-	if [[ $DEBUG_IMAGE == yes ]]; then
-		log "Bebug image: remove quiet from cmdline.txt"
-	    sed -i "s/quiet//" /boot/cmdline.txt
-		cat /boot/cmdline.txt
-	fi
+
 	# Rerun depmod for new drivers
-	log "Finalising drivers installation with depmod on ${KERNEL_VERSION}+,-v7+ and -v7l+"
+	log "Finalising drivers installation with depmod on ${KERNEL_VERSION}+,-v7+ and -v7l+" "info"
 	depmod "${KERNEL_VERSION}+"     # Pi 1, Zero, Compute Module
 	depmod "${KERNEL_VERSION}-v7+"  # Pi 2,3 CM3
 	depmod "${KERNEL_VERSION}-v7l+" # Pi 4 CM4

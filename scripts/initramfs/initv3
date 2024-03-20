@@ -66,9 +66,10 @@ export SQUASH_FILE="/volumio_current.sqsh"
 export IMAGE_PARTITION=
 export REBOOT_MODE="normal"
 export SPLASH=
-export USEKMSG="yes"
+export USEKMSG=
 export DATADEV=
 export UUIDFMT=
+export debug=
 
 ################################### Debian default ###################################
 
@@ -86,7 +87,6 @@ export break=
 export init=/sbin/init
 export readonly=y
 export rootmnt=
-export debug=
 export panic=
 export blacklist=
 export resume=
@@ -148,6 +148,16 @@ for x in $(cat /proc/cmdline); do
 	# normal|mcu
 		REBOOT_MODE=${x#reboot=}
 		;;	
+	debug)
+		debug=y
+		quiet=n
+		if [ ${USEKMSG} == yes ]; then
+			log_output=/dev/kmsg
+		else
+			log_output=/run/initramfs/initramfs.debug
+		fi
+		set -x
+		;;
 ################################### Debian default ###################################
 	init=*)
 		init=${x#init=}
@@ -208,16 +218,6 @@ for x in $(cat /proc/cmdline); do
 		;;
 	rw)
 		readonly=n
-		;;
-	debug)
-		debug=y
-		quiet=n
-		if [ -n "${netconsole}" ]; then
-			log_output=/dev/kmsg
-		else
-			log_output=/run/initramfs/initramfs.debug
-		fi
-		set -x
 		;;
 	debug=*)
 		debug=y
@@ -519,7 +519,10 @@ unset starttime
 # Move virtual filesystems over to the real filesystem
 mount -n -o move /sys ${rootmnt}/sys
 mount -n -o move /proc ${rootmnt}/proc
+################################## Volumio specific ##################################
+mount -n -o move /run ${rootmnt}/run
 
+################################### Debian default ###################################
 # Chain to real filesystem
 # shellcheck disable=SC2086,SC2094
 exec run-init ${drop_caps} "${rootmnt}" "${init}" "$@" <"${rootmnt}/dev/console" >"${rootmnt}/dev/console" 2>&1

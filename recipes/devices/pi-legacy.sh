@@ -4,7 +4,6 @@
 ## Setup for Raspberry Pi
 DEVICE_SUPPORT_TYPE="S" # First letter (Community Porting|Supported Officially|OEM)
 DEVICE_STATUS="T"       # First letter (Planned|Test|Maintenance)
-DEBUG_IMAGE="yes"
 
 # Base system
 BASE="Raspbian"

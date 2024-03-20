@@ -26,7 +26,7 @@ TARGETDEV="/dev/mmcblk0"
 TARGETDATA="/dev/mmcblk0p3"
 TARGETIMAGE="/dev/mmcblk0p2"
 HWDEVICE="yes"
-# USEKMSG="yes"
+USEKMSG="yes"
 UUIDFMT="yes"			# yes|no (actually, anything non-blank)
 FACTORYCOPY="yes"
 

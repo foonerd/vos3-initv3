@@ -11,7 +11,7 @@ ARCH="armhf"
 BUILD="arm"
 
 ### Build image with initramfs debug info?
-DEBUG_IMAGE="no"       # yes/no or empty. Also changes SHOW_SPLASH in cmdline.txt
+DEBUG_IMAGE="yes"       # yes/no or empty. Also changes SHOW_SPLASH in cmdline.txt
 
 ### Device information
 # Used to identify devices (VOLUMIO_HARDWARE) and keep backward compatibility

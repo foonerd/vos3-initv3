@@ -1,5 +1,9 @@
 # -*- shell-script -*-
 
+plymouth_msg() {
+  /bin/plymouth message --text="$*"
+}
+
 maybe_volumio_break() {
 #
 # Enables pre-defined 'init' flow breakpoints by spawning a shell.
@@ -134,7 +138,7 @@ validate_imgfile_imgpart() {
   log_begin_msg "Current data partition" $DATA_PARTITION && log_end_msg
   log_begin_msg "Current boot device" $BOOT_DEVICE && log_end_msg
 
-  [ -z "${UUIDFMT}" ] || log_begin_msg "Retieved boot config file" $BOOT_CONFIG && log_end_msg
+  [ -z "${UUIDFMT}" ] || log_begin_msg "Current boot config file" $BOOT_CONFIG && log_end_msg
   }
 
 wait_for_partitions_ready() {
@@ -144,6 +148,7 @@ wait_for_partitions_ready() {
 #
 #
   log_begin_msg "Waiting for partitions to get ready"
+
   # theoretically partitions can be on different devices, so check them all
   for i in 1 2 3 4 5
   do
@@ -186,7 +191,9 @@ parse_disk() {
 
 
 do_reboot() {
-
+  
+  plymouth_msg "Player re-starting now"
+  
   umount ${IMAGEMNT}
   umount ${BOOTMNT}
   rm -r ${IMAGEMNT}
@@ -219,34 +226,6 @@ do_reboot() {
   esac
 }
 
-load_plymouth() {
-
-  for ARGUMENT in $(cat /proc/cmdline)
-  do
-    case "${ARGUMENT}" in
-      splash*)
-        SPLASH="true"
-        ;;
-      nosplash*|plymouth.enable=0)
-        SPLASH="false"
-        ;;
-    esac
-  done
-
-  if [ "${SPLASH}" = "true" ]
-  then
-   echo "[Daemon]
-Theme=volumio
-ShowDelay=0
-DeviceTimeout=5
-" >/usr/share/plymouth/plymouthd.defaults 
-    mkdir -m 0755 /run/plymouth
-    /sbin/plymouthd --mode=boot --attach-to-session --pid-file=/run/plymouth/pid
-    #/bin/plymouth --show-splash
-  fi
-
-}
-
 wait_for_devices() {
 #
 # Final step in initialisation
@@ -260,7 +239,7 @@ for i in 1 2 3 4 5
       sleep 1
       mdev -s
     else
-	    log_end_msg
+      log_end_msg
       log_begin_msg "Block device ${BOOT_DEVICE} ready"
       break
     fi
@@ -320,7 +299,11 @@ search_for_firmware_update_rootfs() {
       mount -t vfat ${devlink}1 ${USBMNT} >/dev/null 2>&1
       if [ -e ${USBMNT}/*.fir ]; then
         log_end_msg
-        log_begin_msg "New rootfs firmware found"
+          
+        msg="Performing player update, followed by a restart"
+        plymouth_msg $msg
+        log_begin_msg $msg
+
         log_begin_msg "Updating will take several minutes, please wait...."
         # assume data on "/mnt/boot"
         volumio-init-updater
@@ -360,8 +343,10 @@ search_for_factory_reset() {
   done
   log_end_msg
 
-  log_begin_msg "Searching for factory reset on boot device"
   if [ -e "${BOOTMNT}/user_data" ]; then
+
+    plymouth_msg "Performing factory reset"
+    
     log_begin_msg "Deleting User Data..."
     #mke2fsfull is used since busybox mke2fs does not include ext4 support
     /sbin/mke2fsfull -t ext4 -F -E stride=2,stripe-width=1024 -b 4096 "${DATA_PARTITION}" -L volumio_data >/dev/null 2>&1
@@ -399,7 +384,8 @@ process_kernel_update() {
 #   - reboot
 #
   if [ -e "${BOOTMNT}/kernel_update" ]; then
-  
+    
+    plymouth_msg "Performing player update, followed by a restart"
     pre_kernel_update
   
     # remove all previous kernel config files
@@ -431,7 +417,11 @@ resize_datapartition() {
   FREESIZE="$(parted -s "${DATADEV}" unit MB print free | tail -n 2 | grep Free | awk '{print $3}' | awk -F 'MB' '{print $1}')"
   if [ "$(awk 'BEGIN {print ("'$FREESIZE'" >= "'1'")}')" -eq "1" ]; then
     log_end_msg
-    log_begin_msg "Re-sizing Volumio data partition..."
+
+    msg="Expanding internal storage space to maximum"
+    plymouth_msg $msg
+    log_begin_msg $msg
+
     END="$(parted -s "${DATADEV}" unit MB print free | grep Free | tail -1 | awk '{print $2}' | grep -o '[0-9]\+')"
     parted -s "${DATADEV}" resizepart 3 "${END}" >/dev/null 2>&1
     e2fsck -f "${DATA_PARTITION}" -y >/dev/null 2>&1
@@ -463,7 +453,7 @@ mount_overlay_fs() {
   mount -t squashfs $loop_free /mnt/static
   log_end_msg
 
-  VOLUMIO_VERSION="$(cat /mnt/static/etc/os-release | grep VOLUMIO_VERSION)"
+  VOLUMIO_VERSION="$(cat /mnt/static/etc/os-release | grep VOLUMIO_VERSION | awk -F '=' '{print $2}' | cut -d '=' -f 2)"
 
   log_begin_msg "Starting mount data partition"
   # mount a filesystem for write access to the static image
@@ -540,6 +530,7 @@ restore_custom_config() {
     CONFIGORG="${BOOTMNT}/hw_intf.conf"
   fi
   if [ ! -z $BACKUP ]; then
+    /bin/plymouth message --text="Restoring player custom configuration"
     log_begin_msg "Restoring custom config.txt content"
     I2S=`sed -n -e '/#### Volumio i2s setting below: do not alter ####/,$p' ${BACKUP}`
     echo "" >> $CONFIGORG
@@ -561,21 +552,27 @@ post_kernel_update() {
 
 update_UUID() {
 # After a volumio update, when UUIDs are used:
-#   $1 = partition key
+#   $1 = uuid key
 #   $2 = partition
-#   $2 = config file
-#   $3 = second config in case of x86
+#   $3 = config file
+#   $4 = second config in case of x86
 
   log_begin_msg "Updating $1 UUID in $3 $4"
-# Retrieve current UUID for the given partition
-  uuid=$(blkid -s UUID -o value "$2")
   uuidkey=$1
-
+  uuid=$(blkid -s UUID -o value "$2")
+  
+# Backup
+  cp ${BOOTMNT}/$3 ${BOOTMNT}/$3.old
+  if [ ! -z $4 ]; then
+    cp ${BOOTMNT}/$4 ${BOOTMNT}/$4.old
+  fi
+  
 # Update
   case uuidkey in
     imgpart|datapart)
       sed -i "s/${uuidkey}=UUID=[a-fA-F0-9]\{8\}-[A-Fa-f0-9]\{4\}-[A-Fa-f0-9]\{4\}-[A-Fa-f0-9]\{4\}-[A-Fa-f0-9]\{12\}/${uuidkey}=UUID=${uuid}/g" ${BOOTMNT}/$3
       if [ ! -z $4 ]; then
+        cp ${BOOTMNT}/$4 ${BOOTMNT}/$4.old
         sed -i "s/${uuidkey}=UUID=[a-fA-F0-9]\{8\}-[A-Fa-f0-9]\{4\}-[A-Fa-f0-9]\{4\}-[A-Fa-f0-9]\{4\}-[A-Fa-f0-9]\{12\}/${uuidkey}=UUID=${uuid}/g" ${BOOTMNT}/$4
       fi
       ;;

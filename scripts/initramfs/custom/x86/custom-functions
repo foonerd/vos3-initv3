@@ -2,11 +2,15 @@
 #
 
 validate_imgfile_imgpart() {
-  log_begin_msg "Squash image" $SQUASH_FILE && log_end_msg
-  log_begin_msg "Boot partition" $BOOT_PARTITION && log_end_msg
-  log_begin_msg "Image partition" $IMAGE_PARTITION && log_end_msg
-  log_begin_msg "Data partition" $DATA_PARTITION && log_end_msg
-  
+
   BOOT_DEVICE=/dev/$(lsblk -no PKNAME "${BOOT_PARTITION}")
-  log_begin_msg "Boot device" $BOOT_DEVICE && log_end_msg
+  BOOT_CONFIG="syslinux.cfg efi/BOOT/grub.cfg"
+  
+  log_begin_msg "Current squash image " $SQUASH_FILE && log_end_msg
+  log_begin_msg "Current boot partition " $BOOT_PARTITION && log_end_msg
+  log_begin_msg "Current image partition " $IMAGE_PARTITION && log_end_msg
+  log_begin_msg "Current data partition " $DATA_PARTITION && log_end_msg
+  log_begin_msg "Current boot device" $BOOT_DEVICE && log_end_msg
+  log_begin_msg "Current boot config file(s) " $BOOT_CONFIG && log_end_msg
+    
 }

@@ -30,10 +30,11 @@ BOOT_END=180
 IMAGE_END=3800
 BOOT_TYPE=gpt        # msdos or gpt
 BOOT_USE_UUID=yes    # Add UUID to fstab
-INIT_TYPE="initv2"   # init{v2}
 
+## initramfs info
+INIT_TYPE="initv3"   # init{v3|x86}
+PLYMOUTH_THEME="volumio-logo"
 # Modules that will be added to intramfs
-# Review these for more modern kernels?
 MODULES=("overlay" "squashfs"
   # USB/FS modules
   "usbcore" "usb_common" "mmc_core" "mmc_block" "nvme_core" "nvme" "sdhci" "sdhci_pci" "sdhci_acpi"
@@ -127,7 +128,7 @@ write_device_files() {
 }
 EOF
 
-  cp -dR volumio/usr/share/plymouth/themes/volumio/* ${ROOTFSMNT}/usr/share/plymouth/themes/volumio
+  cp -dR volumio/usr/share/plymouth/themes/${PLYMOUTH_THEME} ${ROOTFSMNT}/usr/share/plymouth/themes/${PLYMOUTH_THEME}
 
   # Headphone detect currently only for atom z8350 with rt5640 codec
   # Evaluate additional requirements when they arrive
@@ -314,9 +315,9 @@ EOF
   log "Creating fstab template to be used in initrd"
   sed "s/^UUID=${UUID_BOOT}/%%BOOTPART%%/g" /etc/fstab >/etc/fstab.tmpl
 
-  log "Setting plymouth theme to volumio"
-  
-  plymouth-set-default-theme volumio
+  log "Setting plymouth theme to ${PLYMOUTH_THEME}"
+ 
+  plymouth-set-default-theme -R ${PLYMOUTH_THEME}
   plymouth-set-default-theme
 
   

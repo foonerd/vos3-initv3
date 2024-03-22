@@ -32,7 +32,8 @@ Some devices use initv3 custom functions, eg. x86 and pi (more could follow).
 |Support type|Parameter (group)
 |---|---|
 |plymouth default|"splash" "plymouth.ignore-serial-consoles" "initramfs.clear" (preferred order)
-|initv3 default|"quiet loglevel=0"
+|initv3 default|"quiet loglevel=0" (must-be order acc. some documentation)
 |initv3 default|"use_kmsg=no"
 |initv3 default|"hwdevice=```${DEVICE}```" (nice-to-have, currently unused. Perhaps initv3 should read it from ```/etc/os-release``` like it does ```${VOLUMIO_VERSION}```)
+|initv3 default|All boards: replace ```bootconfig```by ```uuidconfig``` (bootconfig is a reserved param, this should be corrected with initv3)
 ||Add new boards as we proceed with testing||

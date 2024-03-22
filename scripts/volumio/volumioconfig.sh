@@ -499,5 +499,3 @@ cat <<-EOF >/etc/plymouth/plymouthd.conf
 [Daemon]
 Theme=volumio-logo
 EOF
-
-

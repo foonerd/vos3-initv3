@@ -417,18 +417,18 @@ device_chroot_tweaks_pre() {
 	# So, when debugging, remove it and update loglevel to value: 8
 	if [[ $DEBUG_IMAGE == yes ]]; then
 		log "Debug image: remove splash from cmdline.txt" "cfg"
-		SHOW_SPLASH="" # Debug removed
+		SHOW_SPLASH="nosplash" # Debug removed
 		log "Debug image: remove quiet from cmdline.txt" "cfg"
 		KERNEL_QUIET="" # Debug removed
-		log "Debug image: change loglevel to value: 8 in cmdline.txt" "cfg"
-		KERNEL_LOGLEVEL="loglevel=8" # Default Debug
+		log "Debug image: change loglevel to value: 8, debug and kmsg in cmdline.txt" "cfg"
+		KERNEL_LOGLEVEL="loglevel=8 debug use_kmsg=yes" # Default Debug
 	else
 		log "Default image: add splash to cmdline.txt" "cfg"
 		SHOW_SPLASH="splash" # Default splash enabled
 		log "Default image: add quiet to cmdline.txt" "cfg"
 		KERNEL_QUIET="quiet" # Default quiet enabled
-		log "Default image: change loglevel to value: 0 in cmdline.txt" "cfg"
-		KERNEL_LOGLEVEL="loglevel=0" # Default to KERN_EMERG
+		log "Default image: change loglevel to value: 0, nodebug and no kmsg in cmdline.txt" "cfg"
+		KERNEL_LOGLEVEL="loglevel=0 nodebug use_kmsg=no" # Default to KERN_EMERG
 	fi
 	kernel_params+=("${SHOW_SPLASH}")
 	kernel_params+=("${KERNEL_QUIET}")

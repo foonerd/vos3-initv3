@@ -40,7 +40,7 @@ Switches:
   -b <arch>     Build a base rootfs with Multistrap.
                 Options for the target architecture are 
   'arm' (Raspbian armhf 32bit), 'armv7' (Debian armhf 32bit), 'armv8' (Debian arm64 64bit) 
-  'x86' (Debian i386 64bit) or 'x64' (Debian amd64 64bit).
+  'x64' (Debian amd64 64bit).
   -d <device>   Create Image for Specific Devices. Supported device names
 $(printf "\t\t%s\n" "${DEVICE_LIST[@]}")
   -v <version>  Version must be a dot separated number. Example <1.102>.
@@ -330,10 +330,6 @@ if [ -n "${BUILD}" ]; then
   elif [ "${BUILD}" = armv8 ] || [ "${BUILD}" = armv8-dev ]; then
     ARCH="arm64"
     BUILD="armv8"
-  # x86 is unsupported, better de-activate it  
-  #elif [ "${BUILD}" = x86 ] || [ "${BUILD}" = x86-dev ]; then
-  #  ARCH="i386"
-  #  BUILD="x86"
   elif [ "${BUILD}" = x64 ] || [ "${BUILD}" = x64-dev ]; then
     patch_multistrap_conf "x64"
     MULTISTRAPCONF=x86

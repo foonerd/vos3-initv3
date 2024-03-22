@@ -36,7 +36,7 @@
 num_scroll_lines = 4;
 line_width = 80;
 
-logo.image = Image ("volumio3.png");
+logo.image = Image ("volumio-logo.png");
 logo.sprite = Sprite ();
 logo.sprite.SetImage (logo.image);
 

@@ -102,10 +102,6 @@ log "Copying over shairport-sync.service"
 [ -e "${ROOTFSMNT}/lib/systemd/system/shairport-sync.service" ] && rm ${ROOTFSMNT}/lib/systemd/system/shairport-sync.service
 cp ${SRC}/volumio/lib/systemd/system/shairport-sync.service ${ROOTFSMNT}/lib/systemd/system/shairport-sync.service
 
-# New Volumio plumouth theme
-log "Copying over Volumio theme"
-cp -dR ${SRC}/volumio/usr/share/plymouth/themes/${PLYMOUTH_THEME} ${ROOTFSMNT}/usr/share/plymouth/themes/${PLYMOUTH_THEME}
-
 log "Add Volumio WebUI IP"
 cat <<-EOF >>${ROOTFSMNT}/etc/issue
 Welcome to Volumio!

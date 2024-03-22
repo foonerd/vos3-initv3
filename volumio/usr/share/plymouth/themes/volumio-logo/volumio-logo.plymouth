@@ -5,4 +5,4 @@ ModuleName=script
 
 [script]
 ImageDir=/usr/share/plymouth/themes/volumio-logo
-ScriptFile=/usr/share/plymouth/themes/volumio3/volumio-logo.script
+ScriptFile=/usr/share/plymouth/themes/volumio-logo/volumio-logo.script

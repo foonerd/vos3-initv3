@@ -228,6 +228,7 @@ UUID_IMG=${UUID_IMG}
 UUID_DATA=${UUID_DATA}
 BOOT_PART=${BOOT_PART}
 LOOP_DEV=${LOOP_DEV}
+PLYMOUTH_THEME=${PLYMOUTH_THEME}
 MODULES=($(printf '\"%s\" ' "${MODULES[@]}"))
 PACKAGES=($(printf '\"%s\" ' "${PACKAGES[@]}"))
 $(declare -f device_chroot_tweaks || true)      # Don't trigger our trap when function is empty

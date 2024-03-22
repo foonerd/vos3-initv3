@@ -330,9 +330,10 @@ if [ -n "${BUILD}" ]; then
   elif [ "${BUILD}" = armv8 ] || [ "${BUILD}" = armv8-dev ]; then
     ARCH="arm64"
     BUILD="armv8"
-  elif [ "${BUILD}" = x86 ] || [ "${BUILD}" = x86-dev ]; then
-    ARCH="i386"
-    BUILD="x86"
+  # x86 is unsupported, better de-activate it  
+  #elif [ "${BUILD}" = x86 ] || [ "${BUILD}" = x86-dev ]; then
+  #  ARCH="i386"
+  #  BUILD="x86"
   elif [ "${BUILD}" = x64 ] || [ "${BUILD}" = x64-dev ]; then
     patch_multistrap_conf "x64"
     MULTISTRAPCONF=x86

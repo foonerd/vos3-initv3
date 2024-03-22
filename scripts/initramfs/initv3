@@ -481,6 +481,15 @@ fi
 
 maybe_break init $LINENO
 
+################################## Volumio specific ##################################
+# The /boot mount is held by init. Force /etc/fstab to take over with correct mount
+# permissions.
+# Umount boot partition
+plymouth_msg "Finishing storage preparations."
+
+umount ${BOOTMNT}
+rm -r ${BOOTMNT}
+
 # don't leak too much of env - some init(8) don't clear it
 # (keep init, rootmnt, drop_caps)
 #
@@ -522,7 +531,6 @@ unset starttime
 mount -n -o move /sys ${rootmnt}/sys
 mount -n -o move /proc ${rootmnt}/proc
 ################################## Volumio specific ##################################
-mount -n -o move /run ${rootmnt}/run
 
 plymouth_msg "Version $VOLUMIO_VERSION prepared, please wait for startup to finish"
 

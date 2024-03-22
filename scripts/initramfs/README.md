@@ -8,8 +8,9 @@
 |20231230||Continued. initramfs for x86 tested ok, plymouth splash to follow
 |20240110||Halted plymouth for the time being
 |||Continued with verifying and updating armv7
-|20140112||Started Odroid N2/N2+ tests
-|20140117||Documentation in progress
+|20240112||Started Odroid N2/N2+ tests
+|20240117||Documentation in progress
+|20240314|foonerd|Starting on initv3
 
 ## ```##TODO```
 
@@ -27,6 +28,7 @@
 |init.nextarm test/ adaptions|done
 |PI additions, incl. block device info to UUID|done
 |OTA tests|open
+|initv3 test/ adaptions|open
 
 # **Volumio initramfs implementation**
 
@@ -116,7 +118,7 @@ Boot and just let it run. After boot, login (```ctrl-F1```) and check file ```/v
 
 
 
-# Integrating the new INITRAMFS (initv2)
+# Integrating the new INITRAMFS (initv3)
 ## WIP WIP WIP
 
 This documentation is still work in progress and will be completed soon with a comprehensive description of the components involved.  
@@ -139,9 +141,9 @@ loglevel={1¦2¦3¦4¦5¦6¦7¦8}} use_kmsg={yes¦no} {break=}|Alternative for a
 
 ### init scripts
 
-|Item|Usage|(Re)quired/ (O)ptional|
+|Item|Usage|(R)equired/ (O)ptional|
 |---|---|---|
-|initv2| The recipe should use this for the new init script type|R
+|initv3| The recipe should use this for the new init script type|R
 ||```init``` and ```init.nextarm``` are the legacy ones, but can still be used. When used, initramfs will revert to the existing version|
 ||
 |custom-functions|In case the sbc requires specific initramfs processing, try adding a custom function, overriding the existing one as described in the chapter above. Put the function in ```initramfs/custom/<your-sbc-name>/custom-functions```. The recipe should copy this to folder ```${ROOTFSMNT}/root/scripts/custom/```. See x86 as a simple and mp1 for a more complex example|O

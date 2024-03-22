@@ -491,8 +491,8 @@ unset DO_GEN
 unset REBOOT_MODE
 unset SPLASH
 unset USEKMSG
-################################### Debian default ###################################
 unset debug
+################################### Debian default ###################################
 unset MODPROBE_OPTIONS
 unset DPKG_ARCH
 unset ROOTFLAGS

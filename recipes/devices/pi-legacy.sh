@@ -35,6 +35,7 @@ BOOT_END=96
 BOOT_TYPE=msdos      # msdos or gpt
 BOOT_USE_UUID=no     # Add UUID to fstab
 INIT_TYPE="initv3"   # init{v2,v3}
+PLYMOUTH_THEME="volumio-logo"
 
 # Modules that will be added to intramfs
 MODULES=("overlay" "squashfs")
@@ -280,8 +281,8 @@ device_chroot_tweaks_pre() {
 		EOF
 	fi
 
-	log "Starting Raspi platform tweaks" "info"
-	plymouth-set-default-theme volumio
+    log "Setting plymouth theme to ${PLYMOUTH_THEME}" "info"
+    plymouth-set-default-theme -R ${PLYMOUTH_THEME}
 
 	log "Adding gpio & spi group and permissions" "info"
 	groupadd -f --system gpio

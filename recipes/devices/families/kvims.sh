@@ -32,6 +32,7 @@ BOOT_TYPE=msdos          # msdos or gpt
 BOOT_USE_UUID=yes        # Add UUID to fstab
 IMAGE_END=3800
 INIT_TYPE="initv3" # init.{x86/nextarm/nextarm_tvbox}
+PLYMOUTH_THEME="volumio-logo"
 
 # Modules that will be added to intramsfs
 MODULES=("overlay" "squashfs" "nls_cp437")
@@ -124,8 +125,8 @@ EOF
   log "Adding default wifi"
   echo "dhd" >>"/etc/modules"
 
-  log "Configuring boot splash"
-  #plymouth-set-default-theme volumio
+  log "Setting plymouth theme to ${PLYMOUTH_THEME}"
+  #plymouth-set-default-theme -R ${PLYMOUTH_THEME}
 
   log "Disabling login prompt"
   systemctl disable getty@tty1.service

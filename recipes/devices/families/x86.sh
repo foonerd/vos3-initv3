@@ -71,18 +71,18 @@ FIRMWARE_VERSION="20230804"
 # Copy the device specific files (Image/DTS/etc..)
 write_device_files() {
   log "Running write_device_files" "ext"
-  log "Copying kernel files"
+  log "Copying kernel files" "info"
   pkg_root="${PLTDIR}/packages-buster"
 
   cp "${pkg_root}"/linux-image-${KERNEL_VERSION}*_${ARCH}.deb "${ROOTFSMNT}"
 
-  log "Copying header files, when present"
+  log "Copying header files, when present" "info"
   if [ -f "${pkg_root}"/linux-headers-${KERNEL_VERSION}*_${ARCH}.deb ]; then
     cp "${pkg_root}"/linux-headers-${KERNEL_VERSION}*_${ARCH}.deb "${ROOTFSMNT}"
   fi
 
-  log "Copying the latest firmware into /lib/firmware"
-  log "Unpacking the tar file firmware-${FIRMWARE_VERSION}"
+  log "Copying the latest firmware into /lib/firmware" "info"
+  log "Unpacking the tar file firmware-${FIRMWARE_VERSION}" "info"
   tar xfJ "${pkg_root}"/firmware-${FIRMWARE_VERSION}.tar.xz -C "${ROOTFSMNT}"
 
   #log "Copying Alsa Use Case Manager files"
@@ -99,24 +99,24 @@ write_device_files() {
   )
   #TODO: not checked with other Intel SST bytrt/cht audio boards yet, needs more input
   #      to be added to the snd_hda_audio tweaks (see below)
-  log "Adding ${#CustomScripts[@]} custom scripts to /usr/local/bin: " "" "${CustomScripts[@]}"
+  log "Adding ${#CustomScripts[@]} custom scripts to /usr/local/bin: " "" "${CustomScripts[@]}" "ext"
   for script in "${!CustomScripts[@]}"; do
     cp "${pkg_root}/${CustomScripts[$script]}" "${ROOTFSMNT}"/usr/local/bin/"${script}"
     chmod +x "${ROOTFSMNT}"/usr/local/bin/"${script}"
   done
 
-  log "Creating efi folders"
+  log "Creating efi folders" "info"
   mkdir -p "${ROOTFSMNT}"/boot/efi
   mkdir -p "${ROOTFSMNT}"/boot/efi/EFI/debian
   mkdir -p "${ROOTFSMNT}"/boot/efi/BOOT/
   
-  log "Copying bootloaders and grub configuration template"
+  log "Copying bootloaders and grub configuration template" "ext"
   mkdir -p "${ROOTFSMNT}"/boot/grub
   cp "${pkg_root}"/efi/BOOT/grub.cfg "${ROOTFSMNT}"/boot/efi/BOOT/grub.tmpl
   cp "${pkg_root}"/efi/BOOT/BOOTIA32.EFI "${ROOTFSMNT}"/boot/efi/BOOT/BOOTIA32.EFI
   cp "${pkg_root}"/efi/BOOT/BOOTX64.EFI "${ROOTFSMNT}"/boot/efi/BOOT/BOOTX64.EFI
 
-  log "Copying current partition data for use in runtime fast 'installToDisk'"
+  log "Copying current partition data for use in runtime fast 'installToDisk'" "ext"
   cat <<-EOF >"${ROOTFSMNT}/boot/partconfig.json"
 {
   "params":[
@@ -132,7 +132,7 @@ EOF
 
   # Headphone detect currently only for atom z8350 with rt5640 codec
   # Evaluate additional requirements when they arrive
-  log "Copying acpi event handing for headphone jack detect (z8350 with rt5640 only)"
+  log "Copying acpi event handing for headphone jack detect (z8350 with rt5640 only)" "info"
   cp "${pkg_root}"/bytcr-init/jackdetect "${ROOTFSMNT}"/etc/acpi/events
 }
 
@@ -146,8 +146,8 @@ write_device_bootloader() {
 device_image_tweaks() {
   log "Running device_image_tweaks" "ext"
 
-  log "Some wireless network drivers (e.g. for Marvell chipsets) create device 'mlan0'"
-  log "Rename these to 'wlan0' using a systemd link"
+  log "Some wireless network drivers (e.g. for Marvell chipsets) create device 'mlan0'" "ext"
+  log "Rename these to 'wlan0' using a systemd link" "ext"
   cat <<-EOF > "${ROOTFSMNT}/etc/systemd/network/10-rename-mlan0.link"
 [Match]
 Type=wlan
@@ -158,7 +158,7 @@ OriginalName=mlan0
 Name=wlan0
 EOF
 
-  log "Add service to set sane defaults for baytrail/cherrytrail and HDA soundcards"
+  log "Add service to set sane defaults for baytrail/cherrytrail and HDA soundcards" "info"
   cat <<-EOF >"${ROOTFSMNT}/usr/local/bin/soundcard-init.sh"
 #!/bin/sh -e
 /usr/local/bin/bytcr_init.sh
@@ -184,13 +184,13 @@ EOF
   #log "Adding ACPID Service to Startup"
   #ln -s "${ROOTFSMNT}/lib/systemd/system/acpid.service" "${ROOTFSMNT}/etc/systemd/system/multi-user.target.wants/acpid.service"
 
-  log "Blacklisting PC speaker"
+  log "Blacklisting PC speaker" "wrn"
   cat <<-EOF >>"${ROOTFSMNT}/etc/modprobe.d/blacklist.conf"
 blacklist snd_pcsp
 blacklist pcspkr
 EOF
 
-  log "Copying custom initramfs script functions"
+  log "Copying custom initramfs script functions" "info"
   [ -d ${ROOTFSMNT}/root/scripts ] || mkdir ${ROOTFSMNT}/root/scripts
   cp "${SRC}/scripts/initramfs/custom/x86/custom-functions" ${ROOTFSMNT}/root/scripts
 }
@@ -207,7 +207,7 @@ device_chroot_tweaks_pre() {
   log "Performing device_chroot_tweaks_pre" "ext"
   log "Preparing kernel stuff" "info"
 
-  log "Installing the kernel"
+  log "Installing the kernel" "info"
   # Exact kernel version not known
   # Not brilliant, but safe enough as platform repo *should* have only a single kernel package
   # Confirm anyway
@@ -217,7 +217,7 @@ device_chroot_tweaks_pre() {
   rm -r /usr/share/doc/linux-image*
   rm linux-image-*_"${ARCH}".deb
 
-  log "Installing the headers, when present"
+  log "Installing the headers, when present" "info"
   if [ -f linux-headers-*_"${ARCH}".deb ]; then
     mkdir /tmpheaders
     dpkg-deb -R linux-headers-*_"${ARCH}".deb ./tmpheaders
@@ -226,7 +226,7 @@ device_chroot_tweaks_pre() {
     rm linux-headers-*_"${ARCH}".deb
   fi
 
-  log "Change linux kernel image name to 'vmlinuz'"
+  log "Change linux kernel image name to 'vmlinuz'" "info"
   # Rename linux kernel to a fixed name, like we do for any other platform.
   # We only have one and we should not start multiple versions.
   # - our OTA update can't currently handle that and it blows up size of /boot and /lib.
@@ -234,7 +234,7 @@ device_chroot_tweaks_pre() {
   mv /boot/vmlinuz* /boot/vmlinuz
 
   log "Preparing BIOS" "info"
-  log "Installing Syslinux Legacy BIOS at ${BOOT_PART-?BOOT_PART is not known}"
+  log "Installing Syslinux Legacy BIOS at ${BOOT_PART-?BOOT_PART is not known}" "info"
   syslinux -v
   syslinux "${BOOT_PART}"
 
@@ -269,7 +269,7 @@ device_chroot_tweaks_pre() {
     log "Creating debug image" "wrn"
     # Set breakpoints, loglevel, debug, kernel buffer output etc.
     kernel_params+=("break=" "${KERNEL_LOGLEVEL}" "debug" "use_kmsg=yes") 
-    log "Enabling ssh on boot"
+    log "Enabling ssh on boot" "dbg"
     touch /boot/ssh
   else
     # No output (use "quiet loglevel=0" and in that order!)
@@ -277,10 +277,10 @@ device_chroot_tweaks_pre() {
   fi
  
 
-  log "Setting ${#kernel_params[@]} Kernel params:" "" "${kernel_params[*]}"
+  log "Setting ${#kernel_params[@]} Kernel params:" "" "${kernel_params[*]}" "cfg"
 
   log "Setting up syslinux and grub configs" "info"
-  log "Creating run-time template for syslinux config"
+  log "Creating run-time template for syslinux config" "cfg"
   # Create a template for init to use later in `update_config_UUIDs`
   cat <<-EOF >/boot/syslinux.tmpl
 DEFAULT volumio
@@ -291,20 +291,20 @@ LABEL volumio
   INITRD volumio.initrd
 EOF
 
-  log "Creating syslinux.cfg from syslinux template"
+  log "Creating syslinux.cfg from syslinux template" "cfg"
   sed "s/%%IMGPART%%/${UUID_IMG}/g; s/%%BOOTPART%%/${UUID_BOOT}/g; s/%%DATAPART%%/${UUID_DATA}/g" /boot/syslinux.tmpl >/boot/syslinux.cfg
 
-  log "Setting up Grub configuration"
+  log "Setting up Grub configuration" "cfg"
   grub_tmpl=/boot/efi/BOOT/grub.tmpl
   grub_cfg=/boot/efi/BOOT/grub.cfg
-  log "Inserting our kernel parameters to grub.tmpl"
+  log "Inserting our kernel parameters to grub.tmpl" "cfg"
   # Use a different delimiter as we might have some `/` paths
   sed -i "s|%%CMDLINE_LINUX%%|""${kernel_params[*]}""|g" ${grub_tmpl}
 
   log "Creating grub.cfg from grub template"
   cp ${grub_tmpl} ${grub_cfg}
 
-  log "Inserting root and boot partition UUIDs (building the boot cmdline used in initramfs)"
+  log "Inserting root and boot partition UUIDs (building the boot cmdline used in initramfs)" "cfg"
   # Opting for finding partitions by-UUID
   sed -i "s/%%IMGPART%%/${UUID_IMG}/g" ${grub_cfg}
   sed -i "s/%%BOOTPART%%/${UUID_BOOT}/g" ${grub_cfg}
@@ -312,16 +312,16 @@ EOF
 
   log "Finished setting up boot config" "okay"
 
-  log "Creating fstab template to be used in initrd"
+  log "Creating fstab template to be used in initrd" "info"
   sed "s/^UUID=${UUID_BOOT}/%%BOOTPART%%/g" /etc/fstab >/etc/fstab.tmpl
 
-  log "Setting plymouth theme to ${PLYMOUTH_THEME}"
+  log "Setting plymouth theme to ${PLYMOUTH_THEME}" "info"
  
   plymouth-set-default-theme -R ${PLYMOUTH_THEME}
   plymouth-set-default-theme
 
   
-  log "Notebook-specific: ignore 'cover closed' event"
+  log "Notebook-specific: ignore 'cover closed' event" "info"
   sed -i "s/#HandleLidSwitch=suspend/HandleLidSwitch=ignore/g" /etc/systemd/logind.conf
   sed -i "s/#HandleLidSwitchExternalPower=suspend/HandleLidSwitchExternalPower=ignore/g" /etc/systemd/logind.conf
 
@@ -331,8 +331,8 @@ EOF
 device_chroot_tweaks_post() {
   log "Running device_chroot_tweaks_post" "ext"
 
-  log "Cleaning up /boot"
-  log "Removing System.map" "$(ls -lh --block-size=M /boot/System.map-*)"
+  log "Cleaning up /boot" "info"
+  log "Removing System.map" "$(ls -lh --block-size=M /boot/System.map-*)" "info"
   rm /boot/System.map-*
 }
 

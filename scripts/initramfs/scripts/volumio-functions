@@ -530,7 +530,6 @@ restore_custom_config() {
     CONFIGORG="${BOOTMNT}/hw_intf.conf"
   fi
   if [ ! -z $BACKUP ]; then
-    /bin/plymouth message --text="Restoring player custom configuration"
     log_begin_msg "Restoring custom config.txt content"
     I2S=`sed -n -e '/#### Volumio i2s setting below: do not alter ####/,$p' ${BACKUP}`
     echo "" >> $CONFIGORG

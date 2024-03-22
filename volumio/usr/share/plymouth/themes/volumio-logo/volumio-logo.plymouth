@@ -1,5 +1,5 @@
 [Plymouth Theme]
-Name=Volumio3
+Name=volumio-logo
 Description=This is a plymouth theme which simply displays an image and a text array (scrolling)
 ModuleName=script
 

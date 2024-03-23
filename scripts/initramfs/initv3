@@ -58,9 +58,12 @@ export BOOT_DELAY=
 export BOOT_PARTITION=
 export DATA_PARTITION=
 export IMAGE_PARTITION=
+export IMAGEMNT="/mnt/imgpart"
+export BOOTMNT="/mnt/boot"
+export USBMNT="/mnt/usb"
 export BOOT_DEVICE="mmcblk0"
+export BOOT_CONFIG="empty"
 export HW_DEVICE="undefined"
-export OVERLAY_VERSION=">=V22"
 export SQUASH_FILE="/volumio_current.sqsh"
 # export DO_GEN="yes"
 export IMAGE_PARTITION=
@@ -136,8 +139,8 @@ for x in $(cat /proc/cmdline); do
 	bootdev=*)
 		BOOT_DEVICE=${x#bootdev=}
 		;;
-	bootconfig=*)
-		BOOT_CONFIG=${x#bootconfig=}
+	uuidconfig=*)
+		BOOT_CONFIG=${x#uuidconfig=}
 		;;
 	hwdevice=*)
 		HW_DEVICE=${x#hwdevice=}
@@ -277,17 +280,16 @@ if [ -n "$log_output" ]; then
 	unset log_output
 fi
 
-maybe_break top $LINENO
+maybe_volumio_break top "init: $LINENO"
 
 # Don't do log messages here to avoid confusing graphical boots
 run_scripts /scripts/init-top
 
-maybe_break modules $LINENO
+maybe_volumio_break modules "init: $LINENO"
 [ "$quiet" != "y" ] && log_begin_msg "Loading essential drivers" && log_end_msg
 [ -n "${netconsole}" ] && /sbin/modprobe netconsole netconsole="${netconsole}" && log_end_msg
 
 load_modules
-[ "$quiet" != "y" ] && log_end_msg
 
 starttime="$(_uptime)"
 starttime=$((starttime + 1)) # round up
@@ -297,26 +299,25 @@ if [ "$ROOTDELAY" ]; then
 	sleep "$ROOTDELAY"
 fi
 
-maybe_break premount $LINENO
+maybe_volumio_break premount "init: $LINENO"
 [ "$quiet" != "y" ] && log_begin_msg "Running /scripts/init-premount"
 run_scripts /scripts/init-premount
 [ "$quiet" != "y" ] && log_end_msg
 
-maybe_break mount $LINENO
-log_begin_msg "Mounting root file system"
+maybe_volumio_break mount "init: $LINENO"
+log_begin_msg "Mounting 'root' file system"
 # Always load local and nfs (since these might be needed for /etc or
 # /usr, irrespective of the boot script used to mount the rootfs).
-. /scripts/volumio-functions
 
 ###################################### DISABLED ######################################
-# These functions are part of standard Debian init. Volumio relies on sqaushfs therefore
+# These functions are part of standard Debian init. Volumio relies on squashfs therefore
 # will not run in root, local nor nfs. Only mount_top is meeded by udev.
 # Enable if change is needed.
 # . /scripts/local
 #. /scripts/nfs
 #. /scripts/${BOOT}
 #parse_numeric "${ROOT}"
-#maybe_break mountroot $LINENO
+#maybe_break mountroot 
 mount_top
 #mount_premount
 #mountroot
@@ -338,7 +339,7 @@ log_end_msg
 # and datapart ($DATA_PARTITION) will be parsed and validated.
 plymouth_msg "Player preparing startup"
 
-maybe_break init-part-pars $LINENO
+maybe_volumio_break init-part-pars "init: $LINENO"
 
 init_partition_params
 
@@ -347,13 +348,9 @@ init_partition_params
 #
 wait_for_partitions_ready
 
-maybe_break progress $LINENO
+maybe_volumio_break progress "init: $LINENO"
 
 # initialisation finished
-
-IMAGEMNT="/mnt/imgpart"
-BOOTMNT="/mnt/boot"
-USBMNT="/mnt/usb"
 
 # Permanently mount image and boot partition
 [ -d /mnt ] || mkdir /mnt
@@ -367,13 +364,13 @@ mount -t ext4 "${IMAGE_PARTITION}" "${IMAGEMNT}"
 # In case of a gpt boot partition: move the backup table when not done yet
 # This function is also safe for non-gpt boot partitions (it will not trigger a mismatch).
 #
-maybe_break backup_gpt $LINENO
+maybe_volumio_break backup_gpt "init: $LINENO"
 
 move_backup_gpt_table
 
 #
 #
-maybe_break krnl-archive $LINENO
+maybe_volumio_break krnl-archive "init: $LINENO"
 
 create_kernel_archive
 
@@ -385,35 +382,35 @@ fi
 
 # ROOTFS update on usb disk?
 #
-maybe_break search-for-firmw $LINENO
+maybe_volumio_break search-for-firmw "init: $LINENO"
 
 search_for_firmware_update_rootfs
 
 # Factory reset file on usb or in boot partition?
 # ===============================================
-maybe_break search-fact-reset $LINENO
+maybe_volumio_break search-fact-reset "init: $LINENO"
 
 search_for_factory_reset
 
 # Kernel update rollback ?
 # ========================
-maybe_break krnl-rollbck $LINENO
+maybe_volumio_break krnl-rollbck "init: $LINENO"
 
 search_for_kernel_rollback
 
 # Kernel update?
 #
-maybe_break krnl-upd $LINENO
+maybe_volumio_break krnl-upd "init: $LINENO"
 
 process_kernel_update
 
 # Resize data partition?
 #
-maybe_break resize-data $LINENO
+maybe_volumio_break resize-data "init: $LINENO"
 
 resize_datapartition
 
-maybe_break mnt-overlayfs $LINENO
+maybe_volumio_break mnt-overlayfs "init: $LINENO"
 
 # Create writable overlay from squashfs and a data partition folder
 #
@@ -421,9 +418,9 @@ mount_overlay_fs
 
 # Process fstab
 #
-maybe_break modfstab $LINENO
+maybe_volumio_break updfstab "init: $LINENO"
 
-modify_fstab
+update_fstab
 
 ################################ Volumio specific END ################################
 ################################### Debian default ###################################
@@ -449,7 +446,7 @@ mount_bottom
 #nfs_bottom
 #local_bottom
 
-maybe_break bottom $LINENO
+maybe_volumio_break bottom $LINENO
 [ "$quiet" != "y" ] && log_begin_msg "Running /scripts/init-bottom"
 # We expect udev's init-bottom script to move /dev to ${rootmnt}/dev
 run_scripts /scripts/init-bottom
@@ -479,7 +476,7 @@ if ! validate_init "${init}" ; then
 	panic "No init found. Try passing init= bootarg."
 fi
 
-maybe_break init $LINENO
+maybe_volumio_break init "init: $LINENO"
 
 ################################## Volumio specific ##################################
 # The /boot mount is held by init. Force /etc/fstab to take over with correct mount
@@ -495,7 +492,6 @@ rm -r ${BOOTMNT}
 #
 ################################## Volumio specific ##################################
 unset BOOT_DELAY
-unset OVERLAY_VERSION
 unset DO_GEN
 unset REBOOT_MODE
 unset SPLASH

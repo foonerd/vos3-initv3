@@ -12,5 +12,8 @@ validate_imgfile_imgpart() {
   log_begin_msg "Current data partition " $DATA_PARTITION && log_end_msg
   log_begin_msg "Current boot device" $BOOT_DEVICE && log_end_msg
   log_begin_msg "Current boot config file(s) " $BOOT_CONFIG && log_end_msg
-    
+
+   maybe_break t1 ${LINENO} ########################################
 }
+
+

@@ -8,7 +8,7 @@ ARCH="i386"
 BUILD="x86"
 
 ### Build image with initramfs debug info?
-DEBUG_IMAGE="no"
+DEBUG_IMAGE="yes"
 ### Device information
 DEVICENAME="x86"
 # This is useful for multiple devices sharing the same/similar kernel
@@ -146,8 +146,8 @@ write_device_bootloader() {
 device_image_tweaks() {
   log "Running device_image_tweaks" "ext"
 
-  log "Some wireless network drivers (e.g. for Marvell chipsets) create device 'mlan0'" "ext"
-  log "Rename these to 'wlan0' using a systemd link" "ext"
+  # Some wireless network drivers (e.g. for Marvell chipsets) create device 'mlan0'"
+  log "Rename these 'mlan0' to 'wlan0' using a systemd link" 
   cat <<-EOF > "${ROOTFSMNT}/etc/systemd/network/10-rename-mlan0.link"
 [Match]
 Type=wlan
@@ -158,6 +158,7 @@ OriginalName=mlan0
 Name=wlan0
 EOF
 
+  # Add Intel sound service (setings at runtime)
   log "Add service to set sane defaults for baytrail/cherrytrail and HDA soundcards" "info"
   cat <<-EOF >"${ROOTFSMNT}/usr/local/bin/soundcard-init.sh"
 #!/bin/sh -e
@@ -190,9 +191,11 @@ blacklist snd_pcsp
 blacklist pcspkr
 EOF
 
-  log "Copying custom initramfs script functions" "info"
-  [ -d ${ROOTFSMNT}/root/scripts ] || mkdir ${ROOTFSMNT}/root/scripts
-  cp "${SRC}/scripts/initramfs/custom/x86/custom-functions" ${ROOTFSMNT}/root/scripts
+  # Obsolete?, Testing....
+  # x86-specific initramfs functions override
+  #log "Copying custom initramfs script functions" "info"
+  #[ -d ${ROOTFSMNT}/root/scripts ] || mkdir ${ROOTFSMNT}/root/scripts
+  #cp "${SRC}/scripts/initramfs/custom/x86/custom-functions" ${ROOTFSMNT}/root/scripts
 }
 
 # Will be run in chroot (before other things)
@@ -238,19 +241,32 @@ device_chroot_tweaks_pre() {
   syslinux -v
   syslinux "${BOOT_PART}"
 
-  log "Preparing boot configurations" "info"
+  log "Preparing boot configurations" "cfg"
+  if [[ $DEBUG_IMAGE == yes ]]; then
+		log "Debug image: remove splash from cmdline" "cfg"
+		SHOW_SPLASH="nosplash" # Debug removed
+		log "Debug image: remove quiet from cmdline" "cfg"
+		KERNEL_QUIET="loglevel=8" # Default Debug
+  else
+		log "Default image: add splash to cmdline" "cfg"
+		SHOW_SPLASH="initramfs.clear splash plymouth.ignore-serial-consoles" # Default splash enabled
+		log "Default image: add quiet to cmdline" "cfg"
+		KERNEL_QUIET="quiet loglevel=0" # Default quiet enabled, loglevel default to KERN_EMERG
+  fi
 
-
+  # Boot screen stuff
+	kernel_params+=("${SHOW_SPLASH}")
+  # Boot logging stuff
+	kernel_params+=("${KERNEL_QUIET}")
 
   # Build up the base parameters
-  kernel_params=(
+  kernel_params+=(
     # Bios stuff
     "biosdevname=0"
-    # Boot screen stuff
-    "splash" "plymouth.ignore-serial-consoles"
     # Boot params
     "imgpart=UUID=%%IMGPART%%" "bootpart=UUID=%%BOOTPART%%" "datapart=UUID=%%DATAPART%%"
     "hwdevice=x86"
+    "uuidconfig=syslinux.cfg,efi/BOOT/grub.cfg"
     # Image params
     "imgfile=/volumio_current.sqsh"
     # Disable linux logo during boot
@@ -259,27 +275,25 @@ device_chroot_tweaks_pre() {
     "vt.global_cursor_default=0"
     # backlight control (notebooks)
     "acpi_backlight=vendor"
+    # for legacy ifnames in bookworm
+    "net.ifnames=0"   
   )
-  
-  KERNEL_LOGLEVEL="loglevel=0" # Default to KERN_EMERG, also recommended debug image
-  DISABLE_PN="net.ifnames=0"   # For legacy ifnames in buster
-  kernel_params+=("${DISABLE_PN}")
   
   if [ "${DEBUG_IMAGE}" == "yes" ]; then
     log "Creating debug image" "wrn"
     # Set breakpoints, loglevel, debug, kernel buffer output etc.
-    kernel_params+=("break=" "${KERNEL_LOGLEVEL}" "debug" "use_kmsg=yes") 
+    #kernel_params+=("break=" "use_kmsg=yes") 
+    kernel_params+=("break=progress,init,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10" "use_kmsg=yes") 
     log "Enabling ssh on boot" "dbg"
     touch /boot/ssh
   else
-    # No output (use "quiet loglevel=0" and in that order!)
-    kernel_params+=("quiet ${KERNEL_LOGLEVEL} use_kmsg=no initramfs.clear") 
+    # No output
+    kernel_params+=("use_kmsg=no") 
   fi
  
-
   log "Setting ${#kernel_params[@]} Kernel params:" "" "${kernel_params[*]}" "cfg"
 
-  log "Setting up syslinux and grub configs" "info"
+  log "Setting up syslinux and grub configs" "cfg"
   log "Creating run-time template for syslinux config" "cfg"
   # Create a template for init to use later in `update_config_UUIDs`
   cat <<-EOF >/boot/syslinux.tmpl
@@ -312,14 +326,12 @@ EOF
 
   log "Finished setting up boot config" "okay"
 
-  log "Creating fstab template to be used in initrd" "info"
+  log "Creating fstab template to be used in initrd" "cfg"
   sed "s/^UUID=${UUID_BOOT}/%%BOOTPART%%/g" /etc/fstab >/etc/fstab.tmpl
 
-  log "Setting plymouth theme to ${PLYMOUTH_THEME}" "info"
+  log "Setting plymouth theme to ${PLYMOUTH_THEME}" "cfg"
  
   plymouth-set-default-theme -R ${PLYMOUTH_THEME}
-  plymouth-set-default-theme
-
   
   log "Notebook-specific: ignore 'cover closed' event" "info"
   sed -i "s/#HandleLidSwitch=suspend/HandleLidSwitch=ignore/g" /etc/systemd/logind.conf

@@ -513,8 +513,7 @@ update_fstab() {
     fi
     log_success_msg "Found fstab entry with device ${DEVFSTAB} for /boot"
     if [ ! $BOOT_PARTITION == $DEVFSTAB ]; then
-      sed -i "s/${DEVFSTAB}/${BOOT_PARTITION}/g" /mnt/ext/union/etc/fstabsync
-      
+      sed -i "s/${DEVFSTAB}/${BOOT_PARTITION}/g" /mnt/ext/union/etc/fstab
       log_success_msg "fstab entry updated to ${DEVFSTAB}"
       log_end_msg
     fi

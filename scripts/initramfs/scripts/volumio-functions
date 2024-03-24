@@ -113,11 +113,9 @@ init_partition_params() {
       exec sh
       exit 0
     fi
-
   fi
 
   validate_imgfile_imgpart
-    
 }
 
 validate_imgfile_imgpart() {
@@ -129,7 +127,7 @@ validate_imgfile_imgpart() {
       echo "e.g. uuidconfig=boot.ini"
       exec sh
     fi
-    # Remove "," occurrence (x86 has two boot configs, see function 'update_UUID')
+    # Replace "," by space (x86 has two boot configs, see function 'update_UUID')
     BOOT_CONFIG=${BOOT_CONFIG//,/ } 
   fi
   log_end_msg
@@ -141,7 +139,6 @@ validate_imgfile_imgpart() {
   log_begin_msg "Current image partition" $IMAGE_PARTITION && log_end_msg
   log_begin_msg "Current data partition" $DATA_PARTITION && log_end_msg
   log_begin_msg "Current boot device" "($BOOT_DEVICE)" && log_end_msg
-
   [ -z "${UUIDFMT}" ] || log_begin_msg "Current boot config file" $BOOT_CONFIG && log_end_msg
 }
 
@@ -386,7 +383,6 @@ process_kernel_update() {
 #   - do post_kernel_update
 #   - reboot
 #
-  maybe_volumio_break t1 "kernel update LINENO" ###############################
   if [ -e "${BOOTMNT}/kernel_update" ]; then
     
     plymouth_msg "Performing player update, followed by a restart"
@@ -401,12 +397,10 @@ process_kernel_update() {
     restore_custom_config
         
     if [ ! -z "${UUIDFMT}" ]; then
-    maybe_volumio_break t2 "kernel update LINENO" ###############################
       log_begin_msg "Updating UUIDs"
       update_UUID "bootpart" ${BOOT_PARTITION} ${BOOT_CONFIG}
       update_UUID "imgpart" ${IMAGE_PARTITION} ${BOOT_CONFIG}
       update_UUID "datapart" ${DATA_PARTITION} ${BOOT_CONFIG}
-    maybe_volumio_break t3 "kernel update LINENO" ###############################
     fi
     
     post_kernel_update

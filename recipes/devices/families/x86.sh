@@ -8,7 +8,7 @@ ARCH="i386"
 BUILD="x86"
 
 ### Build image with initramfs debug info?
-DEBUG_IMAGE="yes"
+DEBUG_IMAGE="no"
 ### Device information
 DEVICENAME="x86"
 # This is useful for multiple devices sharing the same/similar kernel
@@ -191,11 +191,6 @@ blacklist snd_pcsp
 blacklist pcspkr
 EOF
 
-  # Obsolete?, Testing....
-  # x86-specific initramfs functions override
-  #log "Copying custom initramfs script functions" "info"
-  #[ -d ${ROOTFSMNT}/root/scripts ] || mkdir ${ROOTFSMNT}/root/scripts
-  #cp "${SRC}/scripts/initramfs/custom/x86/custom-functions" ${ROOTFSMNT}/root/scripts
 }
 
 # Will be run in chroot (before other things)
@@ -283,7 +278,7 @@ device_chroot_tweaks_pre() {
     log "Creating debug image" "wrn"
     # Set breakpoints, loglevel, debug, kernel buffer output etc.
     #kernel_params+=("break=" "use_kmsg=yes") 
-    kernel_params+=("break=progress,init,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10" "use_kmsg=yes") 
+    kernel_params+=("break=" "use_kmsg=yes") 
     log "Enabling ssh on boot" "dbg"
     touch /boot/ssh
   else

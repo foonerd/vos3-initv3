@@ -299,14 +299,13 @@ search_for_firmware_update_rootfs() {
       mount -t vfat ${devlink}1 ${USBMNT} >/dev/null 2>&1
       if [ -e ${USBMNT}/*.fir ]; then
         log_end_msg
-        maybe_volumio_break t4 "USB update LINENO" ###############################
 
         plymouth_msg "Receiving player update from USB, this can take several minutes"
 
         log_begin_msg "Updating will take several minutes, please wait..."
         # assume data on "/mnt/boot"
         volumio-init-updater >/dev/null 2>&1
-        maybe_volumio_break t5 "USB update LINENO" ###############################
+
         log_success_msg "Success, remove your usb device, the player restarts after 5 seconds"
         sleep 5
         umount ${USBMNT} >/dev/null 2>&1

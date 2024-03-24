@@ -11,7 +11,7 @@ ARCH="armhf"
 BUILD="arm"
 
 ### Build image with initramfs debug info?
-DEBUG_IMAGE="yes"       # yes/no or empty. Also changes SHOW_SPLASH in cmdline.txt
+DEBUG_IMAGE="no"       # yes/no or empty. Also changes SHOW_SPLASH in cmdline.txt
 
 ### Device information
 # Used to identify devices (VOLUMIO_HARDWARE) and keep backward compatibility
@@ -420,14 +420,14 @@ device_chroot_tweaks_pre() {
 		SHOW_SPLASH="nosplash" # Debug removed
 		log "Debug image: remove quiet from cmdline.txt" "cfg"
 		KERNEL_QUIET="" # Debug removed
-		log "Debug image: change loglevel to value: 8, debug and kmsg in cmdline.txt" "cfg"
-		KERNEL_LOGLEVEL="loglevel=8 debug use_kmsg=yes" # Default Debug
+		log "Debug image: change loglevel to value: 8, debug, break and kmsg in cmdline.txt" "cfg"
+		KERNEL_LOGLEVEL="loglevel=8 debug break= use_kmsg=yes" # Default Debug
 	else
 		log "Default image: add splash to cmdline.txt" "cfg"
 		SHOW_SPLASH="splash" # Default splash enabled
 		log "Default image: add quiet to cmdline.txt" "cfg"
 		KERNEL_QUIET="quiet" # Default quiet enabled
-		log "Default image: change loglevel to value: 0, nodebug and no kmsg in cmdline.txt" "cfg"
+		log "Default image: change loglevel to value: 0, nodebug, no break  and no kmsg in cmdline.txt" "cfg"
 		KERNEL_LOGLEVEL="loglevel=0 nodebug use_kmsg=no" # Default to KERN_EMERG
 	fi
 	kernel_params+=("${SHOW_SPLASH}")
@@ -442,7 +442,7 @@ device_chroot_tweaks_pre() {
 	# Output console device and options.
 	kernel_params+=("console=serial0,115200" "console=tty1")
 	# Image params
-	kernel_params+=("imgpart=UUID=${UUID_IMG} imgfile=/volumio_current.sqsh bootpart=UUID=${UUID_BOOT} datapart=UUID=${UUID_DATA} bootconfig=cmdline.txt")
+	kernel_params+=("imgpart=UUID=${UUID_IMG} imgfile=/volumio_current.sqsh bootpart=UUID=${UUID_BOOT} datapart=UUID=${UUID_DATA} uuidconfig=cmdline.txt")
 	# A quirk of Linux on ARM that may result in suboptimal performance
 	kernel_params+=("pcie_aspm=off" "pci=pcie_bus_safe")
 	# Wait for root device

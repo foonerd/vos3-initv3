@@ -62,6 +62,9 @@ export IMAGEMNT="/mnt/imgpart"
 export BOOTMNT="/mnt/boot"
 export USBMNT="/mnt/usb"
 export BOOT_DEVICE="mmcblk0"
+# Device/Partition separator, character between parentdev and partition index
+# required by non-uuid aware devices
+export DPS="p"
 export BOOT_CONFIG="empty"
 export HW_DEVICE="undefined"
 export SQUASH_FILE="/volumio_current.sqsh"

@@ -386,19 +386,21 @@ device_chroot_tweaks_pre() {
 		SHOW_SPLASH="nosplash" # Debug removed
 		log "Debug image: remove quiet from cmdline.txt" "cfg"
 		KERNEL_QUIET="" # Debug removed
-		log "Debug image: change loglevel to value: 8, debug and kmsg in cmdline.txt" "cfg"
-		KERNEL_LOGLEVEL="loglevel=8 debug use_kmsg=yes" # Default Debug
+		log "Debug image: change loglevel to value: 8, debug, break and kmsg in cmdline.txt" "cfg"
+		KERNEL_LOGLEVEL="loglevel=8 debug break= use_kmsg=yes" # Default Debug
 	else
 		log "Default image: add splash to cmdline.txt" "cfg"
 		SHOW_SPLASH="splash" # Default splash enabled
 		log "Default image: add quiet to cmdline.txt" "cfg"
 		KERNEL_QUIET="quiet" # Default quiet enabled
-		log "Default image: change loglevel to value: 0, nodebug and no kmsg in cmdline.txt" "cfg"
+		log "Default image: change loglevel to value: 0, nodebug, no break and no kmsg in cmdline.txt" "cfg"
 		KERNEL_LOGLEVEL="loglevel=0 nodebug use_kmsg=no" # Default to KERN_EMERG
 	fi
 	kernel_params+=("${SHOW_SPLASH}")
 	kernel_params+=("${KERNEL_QUIET}")
-
+	
+	# Generate partition names, initv3 uses UUIDs	
+	kernel_params+=("genpnames")
 	# Boot screen stuff	
 	kernel_params+=("plymouth.ignore-serial-consoles")
 	# Raspi USB controller params

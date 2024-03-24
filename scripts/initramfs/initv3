@@ -280,7 +280,12 @@ if [ -n "$log_output" ]; then
 	unset log_output
 fi
 
+# Volumio required exception from Debian default
+# --- Exception BEGIN ---
+
 maybe_volumio_break top "init: $LINENO"
+
+# ---- Exception END ----
 
 # Don't do log messages here to avoid confusing graphical boots
 run_scripts /scripts/init-top
@@ -299,12 +304,24 @@ if [ "$ROOTDELAY" ]; then
 	sleep "$ROOTDELAY"
 fi
 
+# Volumio required exception from Debian default
+# --- Exception BEGIN ---
+
 maybe_volumio_break premount "init: $LINENO"
+
+# ---- Exception END ----
+
 [ "$quiet" != "y" ] && log_begin_msg "Running /scripts/init-premount"
 run_scripts /scripts/init-premount
 [ "$quiet" != "y" ] && log_end_msg
 
+# Volumio required exception from Debian default
+# --- Exception BEGIN ---
+
 maybe_volumio_break mount "init: $LINENO"
+
+# ---- Exception END ----
+
 log_begin_msg "Mounting 'root' file system"
 # Always load local and nfs (since these might be needed for /etc or
 # /usr, irrespective of the boot script used to mount the rootfs).
@@ -446,7 +463,13 @@ mount_bottom
 #nfs_bottom
 #local_bottom
 
+# Volumio required exception from Debian default
+# --- Exception BEGIN ---
+
 maybe_volumio_break bottom $LINENO
+
+# ---- Exception END ----
+
 [ "$quiet" != "y" ] && log_begin_msg "Running /scripts/init-bottom"
 # We expect udev's init-bottom script to move /dev to ${rootmnt}/dev
 run_scripts /scripts/init-bottom
@@ -476,7 +499,12 @@ if ! validate_init "${init}" ; then
 	panic "No init found. Try passing init= bootarg."
 fi
 
+# Volumio required exception from Debian default
+# --- Exception BEGIN ---
+
 maybe_volumio_break init "init: $LINENO"
+
+# ---- Exception END ----
 
 ################################## Volumio specific ##################################
 # The /boot mount is held by init. Force /etc/fstab to take over with correct mount

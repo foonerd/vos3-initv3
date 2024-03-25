@@ -499,3 +499,12 @@ cat <<-EOF >/etc/plymouth/plymouthd.conf
 [Daemon]
 Theme=volumio-logo
 EOF
+
+cat <<-EOF >/usr/share/plymouth/plymouthd.defaults
+# Volumio distribution defaults. Changes to this file will be overwritten
+# during upgrades.
+[Daemon]
+Theme=volumio-logo
+ShowDelay=0
+DeviceTimeout=5
+EOF

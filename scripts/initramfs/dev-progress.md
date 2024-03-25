@@ -14,7 +14,9 @@ Nanopi Neo3|untested|no (video-out)
 
 ## Environment variables
 INIT_TYPE=initv3  
+Selection of plymouth themes:
 PLYMOUTH_THEME="volumio-logo"
+PLYMOUTH_THEME="volumio-player" (default)
 
 ## Add initv3 custom functions
 Some devices use initv3 custom functions, eg. x86 and pi (more could follow).

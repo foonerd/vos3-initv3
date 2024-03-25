@@ -54,7 +54,7 @@ for (index = 0; index < num_scroll_lines; index++) {
   lines[index] = Image.Text ("", 1, 1 , 1);
   message[index] = Sprite ();
   message[index].SetX (logo.x);
-  message[index].SetY (logo.y + 200 + (index * 20));
+  message[index].SetY (logo.y + 400 + (index * 20));
   message[index].SetZ (10000); 
   message[index].SetImage (lines[index]);
 }
@@ -98,7 +98,7 @@ fun message_callback(text) {
     # Re-position image
     index_pos_x = Window.GetWidth()/2 - lines[index].GetWidth()/2;
     message[index].SetX (index_pos_x);
-    message[index].SetY ((logo.y + 200 + (index * 20));
+    message[index].SetY (logo.y + 400 + (index * 20));
     message[index].SetZ (10000);
   }  
 }

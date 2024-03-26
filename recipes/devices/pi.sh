@@ -28,6 +28,7 @@ DEVICEREPO="https://github.com/volumio/platform-${DEVICEFAMILY}.git"
 VOLVARIANT=no # Custom Volumio (Motivo/Primo etc)
 MYVOLUMIO=no
 VOLINITUPDATER=yes
+KIOSKMODE=no
 
 ## Partition info
 BOOT_START=0

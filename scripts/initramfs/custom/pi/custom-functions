@@ -18,7 +18,7 @@ done
 }
 
 custom_update_UUID() {
-# This should normally only affect configurations chnage from block device to "disk/by-UUID"
+# This should normally only affect configurations change from block device to "disk/by-UUID"
 # or when BOOT_PARTITION device argument was changed with a new release (seldom)
 UUIDFMT=`cat /proc/cmdline | grep "UUID=" -o`
 if [ ! -z "${UUIDFMT}" ]; then
@@ -26,7 +26,7 @@ if [ ! -z "${UUIDFMT}" ]; then
   UUID_BOOT_CONFIG=`cat "${BOOTMNT}/${BOOT_CONFIG}" | grep -E "[0-9A-F]{4}-[0-9A-F]{4}" -o`
   if [ ! $UUID_BOOT_PARTITION == $UUID_BOOT_CONFIG ]; then
 
-    plymouth_msg "Player internal paremeters update from apllied system upgrade"
+    plymouth_msg "Player internal paremeters update from successful system upgrade"
 
     log_begin_msg "Updating UUIDs in ${BOOT_CONFIG}" && log_end_msg
     update_UUID "bootpart" ${BOOT_PARTITION} ${BOOT_CONFIG}

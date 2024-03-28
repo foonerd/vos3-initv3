@@ -29,8 +29,13 @@ Some devices use initv3 custom functions, eg. x86 and pi (more could follow).
 |x86|```cp "${SRC}/scripts/initramfs/custom/x86/custom-functions" ${ROOTFSMNT}/root/scripts```
 |pi|```cp "${SRC}/scripts/initramfs/custom/pi/custom-functions" ${ROOTFSMNT}/root/scripts```
 
-## Default kernel parameters
+## Custom functions placeholder in ```volumio-functions```
+|Name|Device|actions in custom-functions|
+|---|---|---|
+|custom_init_partition_params()|pi|After upgrade from block device UUID will not be active yet. Use genpnames|
+|custom_update_UUID()|pi|Configurations change from block device to "disk/by-UUID"|
 
+## Default kernel parameters
 |Support type|Parameter (group)
 |---|---|
 |plymouth default|"splash" "plymouth.ignore-serial-consoles" "initramfs.clear" (preferred order)

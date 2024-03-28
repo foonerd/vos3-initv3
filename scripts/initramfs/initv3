@@ -63,7 +63,7 @@ export BOOTMNT="/mnt/boot"
 export USBMNT="/mnt/usb"
 export BOOT_DEVICE="mmcblk0"
 # Device/Partition separator, character between parentdev and partition index
-# required by non-uuid aware devices
+# required by non-uuid aware devices, used to pi custom-functions
 export DPS="p"
 export BOOT_CONFIG="empty"
 export HW_DEVICE="undefined"
@@ -359,6 +359,12 @@ log_end_msg
 # and datapart ($DATA_PARTITION) will be parsed and validated.
 plymouth_msg "Player preparing startup"
 
+# Process UUID - is conversion from genpnames complete?
+#
+maybe_volumio_break cust-init-part "init: $LINENO"
+
+custom_init_partition_params
+
 maybe_volumio_break init-part-pars "init: $LINENO"
 
 init_partition_params
@@ -435,6 +441,12 @@ maybe_volumio_break mnt-overlayfs "init: $LINENO"
 # Create writable overlay from squashfs and a data partition folder
 #
 mount_overlay_fs
+
+# Process UUID - is conversion to UUID complete?
+#
+maybe_volumio_break cust-upd-uuid "init: $LINENO"
+
+custom_update_UUID
 
 # Process fstab
 #

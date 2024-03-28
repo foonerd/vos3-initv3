@@ -25,6 +25,9 @@ if [ ! -z "${UUIDFMT}" ]; then
   UUID_BOOT_PARTITION=$(blkid -s UUID -o value ${BOOT_PARTITION})
   UUID_BOOT_CONFIG=`cat "${BOOTMNT}/${BOOT_CONFIG}" | grep -E "[0-9A-F]{4}-[0-9A-F]{4}" -o`
   if [ ! $UUID_BOOT_PARTITION == $UUID_BOOT_CONFIG ]; then
+
+    plymouth_msg "Player internal paremeters update from apllied system upgrade"
+
     log_begin_msg "Updating UUIDs in ${BOOT_CONFIG}" && log_end_msg
     update_UUID "bootpart" ${BOOT_PARTITION} ${BOOT_CONFIG}
     update_UUID "imgpart" ${IMAGE_PARTITION} ${BOOT_CONFIG}

@@ -497,6 +497,12 @@ device_chroot_tweaks_pre() {
 
 	log "Raspi Kernel and Modules installed" "okay"
 
+	log "Writing splash.txt file" "info"
+	cat <<-EOF >/boot/splash.txt
+	## Initramfs-Splash
+	image=volumio.png
+	fullscreen=0
+	EOF
 }
 
 # Will be run in chroot - Post initramfs

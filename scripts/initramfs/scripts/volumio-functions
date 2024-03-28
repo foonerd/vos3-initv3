@@ -307,9 +307,15 @@ search_for_firmware_update_rootfs() {
         volumio-init-updater >/dev/null 2>&1
         [ -e ${USBMNT}/*.fir ] && rm -f ${USBMNT}/*.fir
         log_success_msg "Success, update from USB applied" && log_end_msg
+
+        plymouth_msg "Player update from USB completed"
+
         umount ${USBMNT} >/dev/null 2>&1
         rmdir ${USBMNT}
         log_success_msg "Remove your usb device, the player restarts after 10 seconds" && log_end_msg
+
+        plymouth_msg "Remove USB used for update, the player restarts after 10 seconds"
+
         sleep 10
         do_reboot
         break

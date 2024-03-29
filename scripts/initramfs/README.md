@@ -11,6 +11,7 @@
 |20240112||Started Odroid N2/N2+ tests
 |20240117||Documentation in progress
 |20240314|foonerd|Starting on initv3
+|20240329|gkkpch,foonerd|Starting device testing on initv3
 
 ## ```##TODO```
 
@@ -21,10 +22,10 @@
 |Board-specifics for odroidn2|done
 |Board-specifics for mp1|done
 |Verify RPi USB boot|done
-|Pick up the plymouth issue, as a default (debian futureprototype) seems to startup and hold until booted|open-delayed
-|Plymouth can't do early display (only after systemd start, shutdown mode was/is ok), kernel module missing in initrd?|open
+|Pick up the plymouth issue, as a default (debian futureprototype) seems to startup and hold until booted|done
+|Plymouth can't do early display (only after systemd start, shutdown mode was/is ok), kernel module missing in initrd?|done
 |Initrd modules to be investigated|open
-|Backport Plymouth in case successfull|open
+|Backport Plymouth in case successful|open
 |init.nextarm test/ adaptions|done
 |PI additions, incl. block device info to UUID|done
 |OTA tests|open
@@ -88,17 +89,17 @@ Combined with the ```use_kmsg``` parameter, the debug messages will either be pr
 The debug file can be accessed during initramfs processing ***and*** after the boot process has completed.
 
 ## 2. **Using Breakpoints**
-Breakpoints are a big step forward for debugging, designed to let initramfs stop at optional locations in initramfs, the locations themselves are pre-defined, but can be configured with the ```break``` cmdline parameter.     
+Breakpoints are a big step forward for debugging, designed to let initramfs stop at optional locations in initramfs, the locations themselves are pre-defined, but can be configured with the ```break``` cmdline parameter.
 When a breakpoint is reached, initramfs jumps to a temporary busybox shell.  
 Here you can check parameters, look at the kernel log (dmesg) or check the initramfs.debug file (when ```debug``` has been configure, combined with ```use_ksmsg=yes```, see above). 
 
-You could add your own breakpoints, but that would mean a modification of the init script.   
-Use ```do_break()``` for that and remove them when you are finished.
+You could add your own breakpoints, but that would mean a modification of the init script.
+Use ```maybe_volumio_break <break name> "init: $LINENO"``` for that and remove them when you are finished.
 
 
 ### Valid breakpoints are:
 ```
-cmdline, modules, backup-gpt, srch-firmw-upd, srch-fact-reset, kernel-rollb, kernel-upd, resize-data, mnt-overlayfs, modfstab, switch-root
+top, modules, premount, mount, cust-init-part, init-part-pars, progress, backup_gpt, krnl-archive, search-for-firmw, search-fact-reset, search-fact-reset, krnl-rollbck,krnl-upd, resize-data, mnt-overlayfs, cust-upd-uuid, updfstab, bottom, init
 ```
 
 ### Configuring a breakpoint
@@ -109,7 +110,7 @@ break=modules,kernel-upd
 ```
 
 Dropping to a shell will not cause a kernel panic, when leaving the shell with ```exit```.   
-The initramfs flow will continue aftre the breakpoints, you can use as many breakpoints from the list as you need.  
+The initramfs flow will continue after the breakpoints, you can use as many breakpoints from the list as you need.  
 This is different from the way debugging is done with the current version, which stops initramfs alltogether and then causes a kernel panic.  
 
 ## 3. Only for Plymouth issues
@@ -126,7 +127,7 @@ The initramfs script collection has been thoroughly tested with x86 and arvm7 (O
 It has not been verified with an RPi or Primo, but this *should* be just verification, as there *should* be no more functional differences.  
 (Most of the original differences are now obsolete as support has stopped for old armv7 boards).  
 
-MP1 was added to Volumio later and has also not been verified.   
+MP1 was added to Volumio later and has also not been verified.
 This is relevant, because some work needs to be done for mp1, it is the only device which received very specific ```init``` updates because of necessary modifications with preparing kernel 6.1y: it needs u-boot to be updated as well..  
 
 ## Build recipe implementation details
@@ -146,7 +147,7 @@ loglevel={1¦2¦3¦4¦5¦6¦7¦8}} use_kmsg={yes¦no} {break=}|Alternative for a
 |initv3| The recipe should use this for the new init script type|R
 ||```init``` and ```init.nextarm``` are the legacy ones, but can still be used. When used, initramfs will revert to the existing version|
 ||
-|custom-functions|In case the sbc requires specific initramfs processing, try adding a custom function, overriding the existing one as described in the chapter above. Put the function in ```initramfs/custom/<your-sbc-name>/custom-functions```. The recipe should copy this to folder ```${ROOTFSMNT}/root/scripts/custom/```. See x86 as a simple and mp1 for a more complex example|O
+|custom-functions|In case the sbc requires specific initramfs processing, try adding a custom function, overriding the existing one as described in the chapter above. Put the function in ```initramfs/custom/<your-sbc-name>/custom-functions```. The recipe should copy this to folder ```${ROOTFSMNT}/root/scripts/custom/```. See x86 as a simple and mp1 or pi for a more complex example including init placeholders|O
 
 
 # **Quick Edit Initramfs**

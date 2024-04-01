@@ -69,7 +69,7 @@ init_partition_params() {
   if [ "${DO_GEN}" == "yes" ]; then
     log_begin_msg "Validating 'DO_GEN'"
     # seldomly used, generate fixed naming from supplied params
-    if [ -z ${BOOT_DEVICE} ] || -z ${DPS} ]; then
+    if [ -z ${BOOT_DEVICE} ] || [ -z ${DPS} ]; then
       echo "Fatal: when choosing a 'DO_GEN' setup, also specify 'BOOT_DEVICE' and 'DPS' as part of the kernel cmdline parameters"
       exec sh
     fi

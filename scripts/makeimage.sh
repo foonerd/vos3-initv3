@@ -287,7 +287,7 @@ log "Creating Kernel archive"
 # It is part of the x86 syslinux bootloader
 # Rewriting it would result in relocation and a broken x86 legacy boot
 
-tar cf "${VOLMNT}/kernel_current.tar" --exclude='resize-volumio-datapart' --exclude='ldlinux.sys' \
+tar cf "${VOLMNT}/kernel_current.tar" --exclude='ldlinux.sys' \
   -C $SQSHMNT/boot/ .
 
 [[ "${CLEAN_IMAGE_FILE:-yes}" != yes ]] && cp -rp "${VOLMNT}"/kernel_current.tar "${OUTPUT_DIR}"/kernel_current.tar

@@ -34,7 +34,6 @@ BOOT_END=148
 BOOT_TYPE=msdos          # msdos or gpt
 BOOT_USE_UUID=yes        # Add UUID to fstab
 INIT_TYPE="initv3"   # init{v2,v3}
-PLYMOUTH_THEME="volumio-player"
 
 # Modules that will be added to intramsfs
 MODULES=("overlay" "overlayfs" "squashfs" "nls_cp437"  "fuse")
@@ -91,9 +90,6 @@ EOF
 	cat <<-EOF >/etc/udev/rules.d/99-gpio.rules
 	SUBSYSTEM=="gpio*", PROGRAM="/bin/sh -c 'find -L /sys/class/gpio/ -maxdepth 2 -exec chown root:gpio {} \; -exec chmod 770 {} \; || true'"
 	EOF
-
-    log "Setting plymouth theme to ${PLYMOUTH_THEME}" "info"
-    plymouth-set-default-theme -R ${PLYMOUTH_THEME}
 }
 
 # Will be run in chroot - Post initramfs

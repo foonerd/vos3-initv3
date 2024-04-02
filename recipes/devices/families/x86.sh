@@ -128,7 +128,8 @@ write_device_files() {
 }
 EOF
 
-  cp -dR volumio/usr/share/plymouth/themes/${PLYMOUTH_THEME} ${ROOTFSMNT}/usr/share/plymouth/themes/${PLYMOUTH_THEME}
+	log "Copying selected Volumio ${PLYMOUTH_THEME} theme" "cfg"
+  cp -dR "${SRC}/volumio/plymouth/themes/${PLYMOUTH_THEME}" ${ROOTFSMNT}/usr/share/plymouth/themes/${PLYMOUTH_THEME}
 
   # Headphone detect currently only for atom z8350 with rt5640 codec
   # Evaluate additional requirements when they arrive

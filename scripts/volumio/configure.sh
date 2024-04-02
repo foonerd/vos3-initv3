@@ -88,11 +88,8 @@ cp "${SRC}/volumio/bin/dynswap.sh" "${ROOTFS}/bin/dynswap.sh"
 cp "${SRC}/volumio/bin/rename_netiface0.sh" "${ROOTFS}/bin/rename_netiface0.sh"
 chmod a+x "${ROOTFS}/bin/rename_netiface0.sh"
 
-#Lib files
-cp -rp "${SRC}"/volumio/usr/lib/* "${ROOTFS}/usr/lib/"
-
-#Upmpdcli files
-cp -rp "${SRC}"/volumio/usr/share/upmdcli/* "${ROOTFS}/usr/share/upmdcli/"
+#Libs & upmpdcli files
+cp -rp "${SRC}"/volumio/usr/* "${ROOTFS}/usr/"
 
 #CPU TWEAK
 cp "${SRC}/volumio/bin/volumio_cpu_tweak" "${ROOTFS}/bin/volumio_cpu_tweak"

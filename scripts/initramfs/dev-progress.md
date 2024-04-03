@@ -6,11 +6,11 @@
 x86| yes| yes
 RPi| yes| yes
 mp1| yes| yes
-odroidn2| yes| no plymouth at this stage 
-odroidn2| yes| no plymouth at this stage 
+odroidn2| yes| yes 
+odroidn2| yes| yes 
 Nanopi Neo2| yes|no (no video-out)
 Nanopi Neo3| yes|no (video-out)
-Nanopi M4B| yes|no plymouth at this stage
+Nanopi M4B| yes| yes
 |||Add new boards as we proceed testing
 
 # Recipes modifications

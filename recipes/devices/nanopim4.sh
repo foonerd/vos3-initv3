@@ -11,6 +11,11 @@ ARCH="armhf"
 BUILD="armv7"
 UINITRD_ARCH="arm64"
 
+# Plymouth theme?
+PLYMOUTH_THEME="volumio-player"
+# Debug image?
+DEBUG_IMAGE=no
+
 ### Device information
 DEVICENAME="NanoPi M4B"
 # This is useful for multiple devices sharing the same/similar kernel
@@ -42,6 +47,13 @@ PACKAGES=("bluez-firmware" "bluetooth" "bluez" "bluez-tools")
 write_device_files() {
   log "Running write_device_files" "ext"
 
+  if [ ! -z ${PLYMOUTH_THEME} ]; then
+    log "Plymouth selected, adding plymouth-themes to list of packages to install" ""
+    PACKAGES+=("plymouth-themes")
+  	log "Copying selected Volumio ${PLYMOUTH_THEME} theme" "cfg"
+    cp -dR "${SRC}/volumio/plymouth/themes/${PLYMOUTH_THEME}" ${ROOTFSMNT}/usr/share/plymouth/themes/${PLYMOUTH_THEME}
+  fi
+
   log "Copying the platform defaults"
   cp -dR "${PLTDIR}/${DEVICE}/boot" "${ROOTFSMNT}"
   cp -pdR "${PLTDIR}/${DEVICE}/lib/modules" "${ROOTFSMNT}/lib"
@@ -70,17 +82,33 @@ device_image_tweaks() {
 
 # Will be run in chroot - Pre initramfs
 device_chroot_tweaks_pre() {
-  #log "Performing device_chroot_tweaks_pre" "ext"
-  log "Fixing armv8 deprecated instruction emulation with armv7 rootfs"
-  cat <<-EOF >>/etc/sysctl.conf
-abi.cp15_barrier=2
-EOF
+
 
   log "Creating boot parameters from template"
   sed -i "s/bootconfig/uuidconfig/" /boot/armbianEnv.txt
   sed -i "s/imgpart=UUID=/imgpart=UUID=${UUID_IMG}/g" /boot/armbianEnv.txt
   sed -i "s/bootpart=UUID=/bootpart=UUID=${UUID_BOOT}/g" /boot/armbianEnv.txt
   sed -i "s/datapart=UUID=/datapart=UUID=${UUID_DATA}/g" /boot/armbianEnv.txt
+
+# Configure kernel parameters, overrule $verbosity in order to keep the template (platform files) untouched
+  if [ "${DEBUG_IMAGE}" == "yes" ]; then
+    log "Configuring DEBUG kernel parameters" "cfg"
+    sed -i "s/loglevel=$verbosity/loglevel=8 nosplash break= use_kmsg=yes/" /boot/boot.cmd
+  else
+    log "Configuring default kernel parameters" "cfg"
+    sed -i "s/loglevel=$verbosity/quiet loglevel=0/" /boot/boot.cmd
+    if [ ! -z "${PLYMOUTH_THEME}" ]; then
+      log "Adding splash kernel parameters" "cfg"
+      plymouth-set-default-theme -R ${PLYMOUTH_THEME}
+      sed -i "s/loglevel=0/loglevel=0 splash plymouth.ignore-serial-consoles initramfs.clear/" /boot/boot.cmd
+    fi  
+  fi
+
+  #log "Performing device_chroot_tweaks_pre" "ext"
+  log "Fixing armv8 deprecated instruction emulation with armv7 rootfs"
+  cat <<-EOF >>/etc/sysctl.conf
+abi.cp15_barrier=2
+EOF
 
   log "Adding gpio group and udev rules"
   groupadd -f --system gpio

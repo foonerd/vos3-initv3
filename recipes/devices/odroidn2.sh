@@ -12,5 +12,7 @@ source "${SRC}"/recipes/devices/families/odroids.sh
 DEVICENAME="Odroid-N2"
 DEVICE="odroidn2"
 
+# Plymouth theme?
 PLYMOUTH_THEME="volumio-player"
-DEBUG_IMAGE=no
+# Debug image?
+DEBUG_IMAGE="no"

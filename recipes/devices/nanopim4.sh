@@ -62,7 +62,7 @@ write_device_files() {
   cp -pdR "${PLTDIR}/${DEVICE}/u-boot" "${ROOTFSMNT}"
 
   log "Mark the boot partition with nanopim4 '${VERSION}'"
-  echo "${VERSION}" > "${ROOTFSMNT}"/boot/nanopim4.version
+  log "${VERSION}" > "${ROOTFSMNT}"/boot/nanopim4.version
   
 }
 

@@ -26,8 +26,7 @@ BOOT_START=1
 BOOT_END=64
 BOOT_TYPE=msdos          # msdos or gpt
 BOOT_USE_UUID=yes        # Add UUID to fstab
-INIT_TYPE="initv2" # init{.x86|.nextarm|v2}
-#INIT_TYPE="initv3"
+INIT_TYPE="initv3"
 
 # Modules that will be added to intramsfs
 MODULES=("overlay" "squashfs" "nls_cp437")
@@ -75,6 +74,7 @@ device_chroot_tweaks_pre() {
   log "Performing device_chroot_tweaks_pre" "ext"
 
   log "Creating boot.ini from template"
+  sed -i "s/bootconfig/uuidconfig/" /boot/boot.ini
   sed -i "s/%%VOLUMIO-PARAMS%%/imgpart=UUID=${UUID_IMG} bootpart=UUID=${UUID_BOOT} datapart=UUID=${UUID_DATA}/" /boot/boot.ini
 
   log "Fixing armv8 deprecated instruction emulation with armv7 rootfs"

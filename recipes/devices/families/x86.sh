@@ -33,7 +33,8 @@ BOOT_USE_UUID=yes    # Add UUID to fstab
 
 ## initramfs info
 INIT_TYPE="initv3"   # init{v3|x86}
-PLYMOUTH_THEME="volumio-logo"
+PLYMOUTH_THEME="volumio-player"
+
 # Modules that will be added to intramfs
 MODULES=("overlay" "squashfs"
   # USB/FS modules

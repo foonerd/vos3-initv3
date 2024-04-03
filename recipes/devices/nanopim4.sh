@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2034
 
-## Setup for NanoPi Neo2 H5 based devices
+## Setup for NanoPi M4 based devices
 DEVICE_SUPPORT_TYPE="O" # First letter (Community Porting|Supported Officially|OEM)
 DEVICE_STATUS="P"       # First letter (Planned|Test|Maintenance)
 
@@ -12,7 +12,7 @@ BUILD="armv7"
 UINITRD_ARCH="arm64"
 
 ### Device information
-DEVICENAME="NanoPi M4"
+DEVICENAME="NanoPi M4B"
 # This is useful for multiple devices sharing the same/similar kernel
 DEVICEFAMILY="rk3399"
 # tarball from DEVICEFAMILY repo to use
@@ -30,7 +30,7 @@ BOOT_START=21
 BOOT_END=378
 BOOT_TYPE=msdos          # msdos or gpt
 BOOT_USE_UUID=yes        # Add UUID to fstab
-INIT_TYPE="initv3" # init.{x86/nextarm/nextarm_tvbox}
+INIT_TYPE="initv3" 
 
 # Modules that will be added to intramsfs
 MODULES=("overlay" "overlayfs" "squashfs" "nls_cp437" "fuse")
@@ -77,6 +77,7 @@ abi.cp15_barrier=2
 EOF
 
   log "Creating boot parameters from template"
+  sed -i "s/bootconfig/uuidconfig/" /boot/armbianEnv.txt
   sed -i "s/imgpart=UUID=/imgpart=UUID=${UUID_IMG}/g" /boot/armbianEnv.txt
   sed -i "s/bootpart=UUID=/bootpart=UUID=${UUID_BOOT}/g" /boot/armbianEnv.txt
   sed -i "s/datapart=UUID=/datapart=UUID=${UUID_DATA}/g" /boot/armbianEnv.txt

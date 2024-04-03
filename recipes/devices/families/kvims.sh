@@ -9,6 +9,8 @@ ARCH="armhf"
 BUILD="armv7"
 UINITRD_ARCH="arm"
 
+### Build image with initramfs debug info?
+DEBUG_IMAGE="yes"
 ### Device information
 # This is useful for multiple devices sharing the same/similar kernel
 #DEVICENAME="not set here"
@@ -31,8 +33,8 @@ BOOT_END=80
 BOOT_TYPE=msdos          # msdos or gpt
 BOOT_USE_UUID=yes        # Add UUID to fstab
 IMAGE_END=3800
-INIT_TYPE="initv3" # init.{x86/nextarm/nextarm_tvbox}
-PLYMOUTH_THEME="volumio-logo"
+INIT_TYPE="initv3"
+PLYMOUTH_THEME="volumio-player"
 
 # Modules that will be added to intramsfs
 MODULES=("overlay" "squashfs" "nls_cp437")
@@ -105,9 +107,7 @@ write_device_bootloader() {
 
 # Will be called by the image builder for any customisation
 device_image_tweaks() {
-	log "Copying custom initramfs script functions" "cfg"
-	[ -d ${ROOTFSMNT}/root/scripts ] || mkdir ${ROOTFSMNT}/root/scripts
-	cp "${SRC}/scripts/initramfs/custom/non-uuid-devices/custom-functions" ${ROOTFSMNT}/root/scripts
+  :
 }
 
 # Will be run in chroot - Pre initramfs
@@ -115,9 +115,18 @@ device_chroot_tweaks_pre() {
   log "Performing device_chroot_tweaks_pre" "ext"
 
   log "Creating boot parameters from template"
+  sed -i "s/bootconfig/uuidconfig/" /boot/boot.ini
   sed -i "s/#imgpart=UUID=/imgpart=UUID=${UUID_IMG}/g" /boot/env.system.txt
   sed -i "s/#bootpart=UUID=/bootpart=UUID=${UUID_BOOT}/g" /boot/env.system.txt
   sed -i "s/#datapart=UUID=/datapart=UUID=${UUID_DATA}/g" /boot/env.system.txt
+
+  if [ "${DEBUG_IMAGE}" == "yes" ]; then
+    log "Configuring DEBUG image" "cfg"
+    sed -i "s/quiet loglevel=0 splash/loglevel=8 nosplash break= use_kmsg=yes/" /boot/env.system.txt
+  else
+    log "Configuring default splash image" "cfg"
+    sed -i "s/splash/splash plymouth.ignore-serial-consoles initramfs.clear/" /boot/env.system.txt
+  fi  
 
   log "Fixing armv8 deprecated instruction emulation, allow dmesg"
   cat <<-EOF >>/etc/sysctl.conf
@@ -131,7 +140,7 @@ EOF
   echo "dhd" >>"/etc/modules"
 
   log "Setting plymouth theme to ${PLYMOUTH_THEME}"
-  #plymouth-set-default-theme -R ${PLYMOUTH_THEME}
+  plymouth-set-default-theme -R ${PLYMOUTH_THEME}
 
   log "Disabling login prompt"
   systemctl disable getty@tty1.service
@@ -169,8 +178,9 @@ nv_by_chip=5 \
 device_image_tweaks_post() {
   log "Running device_image_tweaks_post" "ext"
   log "Creating uInitrd from 'volumio.initrd'" "info"
-  if [[ -f "${ROOTFSMNT}"/boot/volumio.initrd ]]; then
-    mkimage -v -A "${UINITRD_ARCH}" -O linux -T ramdisk -C none -a 0 -e 0 -n uInitrd -d "${ROOTFSMNT}"/boot/volumio.initrd "${ROOTFSMNT}"/boot/uInitrd
-    rm "${ROOTFSMNT}"/boot/volumio.initrd
+  if [[ -f "${ROOTFSMNT}/boot/volumio.initrd" ]]; then
+    mv "${ROOTFSMNT}/boot/volumio.initrd" ${SRC}
+    mkimage -v -A "${UINITRD_ARCH}" -O linux -T ramdisk -C none -a 0 -e 0 -n uInitrd -d "${SRC}/volumio.initrd" "${ROOTFSMNT}/boot/uInitrd"
+    rm "${SRC}/volumio.initrd"
   fi
 }

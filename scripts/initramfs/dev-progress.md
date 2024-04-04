@@ -1,7 +1,7 @@
 
 # Current compatible
 
-|Board name|initv3|plymouth|
+|Board name/ recipe|initv3|plymouth|
 |---|---|---|
 x86| yes| yes
 RPi| yes| yes
@@ -10,8 +10,9 @@ odroidn2| yes| yes
 odroidc4| yes| yes 
 odroidm1s| yes| yes
 nanopineo2| yes|no (no video-out)
-nanopineo3| yes|no (video-out)
+nanopineo3| yes|no (no video-out)
 nanopim4| yes| yes
+rockpi-4b| yes| yes
 |||Add new boards as we proceed testing
 
 # Recipes modifications

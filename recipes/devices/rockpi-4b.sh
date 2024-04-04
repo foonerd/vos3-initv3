@@ -119,7 +119,7 @@ EOF
       sed -i "s/loglevel=0/loglevel=0 splash plymouth.ignore-serial-consoles initramfs.clear/" /boot/boot.cmd
     fi  
   fi
-cat /boot/boot.cmd
+
   log "Adding gpio group and udev rules"
   groupadd -f --system gpio
   usermod -aG gpio volumio

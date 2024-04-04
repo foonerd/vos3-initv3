@@ -52,7 +52,7 @@ write_device_files() {
 
  if [ ! -z ${PLYMOUTH_THEME} ]; then
     log "Plymouth selected, adding plymouth-themes to list of packages to install" ""
-    PACKAGES+=("plymouth-themes")
+    PACKAGES+=("plymouth-label")
   	log "Copying selected Volumio ${PLYMOUTH_THEME} theme" "cfg"
     cp -dR "${SRC}/volumio/plymouth/themes/${PLYMOUTH_THEME}" ${ROOTFSMNT}/usr/share/plymouth/themes/${PLYMOUTH_THEME}
   fi

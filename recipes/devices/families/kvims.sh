@@ -10,7 +10,8 @@ BUILD="armv7"
 UINITRD_ARCH="arm"
 
 ### Build image with initramfs debug info?
-DEBUG_IMAGE="yes"
+DEBUG_IMAGE="no"
+
 ### Device information
 # This is useful for multiple devices sharing the same/similar kernel
 #DEVICENAME="not set here"
@@ -41,7 +42,6 @@ MODULES=("overlay" "squashfs" "nls_cp437")
 # Packages that will be installed
 PACKAGES=("lirc" "fbset" "mc" "abootimg" "bluez-firmware"
   "bluetooth" "bluez" "bluez-tools" "linux-base" "triggerhappy"
-  "plymouth" "plymouth-themes"
 )
 
 ### Device customisation
@@ -49,6 +49,13 @@ PACKAGES=("lirc" "fbset" "mc" "abootimg" "bluez-firmware"
 write_device_files() {
 
   log "Running write_device_files" "ext"
+
+ if [ ! -z ${PLYMOUTH_THEME} ]; then
+    log "Plymouth selected, adding plymouth-themes to list of packages to install" ""
+    PACKAGES+=("plymouth-themes")
+  	log "Copying selected Volumio ${PLYMOUTH_THEME} theme" "cfg"
+    cp -dR "${SRC}/volumio/plymouth/themes/${PLYMOUTH_THEME}" ${ROOTFSMNT}/usr/share/plymouth/themes/${PLYMOUTH_THEME}
+  fi
 
   cp -R "${PLTDIR}/${DEVICEBASE}/boot" "${ROOTFSMNT}"
 
@@ -112,20 +119,34 @@ device_image_tweaks() {
 
 # Will be run in chroot - Pre initramfs
 device_chroot_tweaks_pre() {
-  log "Performing device_chroot_tweaks_pre" "ext"
+  log "Performing device_chroot_tweaks_pre" "cfg"
 
-  log "Creating boot parameters from template"
-  sed -i "s/bootconfig/uuidconfig/" /boot/boot.ini
+  log "Configuring UUID boot parameters" "info"
+  
   sed -i "s/#imgpart=UUID=/imgpart=UUID=${UUID_IMG}/g" /boot/env.system.txt
   sed -i "s/#bootpart=UUID=/bootpart=UUID=${UUID_BOOT}/g" /boot/env.system.txt
   sed -i "s/#datapart=UUID=/datapart=UUID=${UUID_DATA}/g" /boot/env.system.txt
 
+  log "Remove default plymouth.ignore-serial-consoles " "info"
+  sed -i "s/plymouth.ignore-serial-consoles//" /boot/boot.ini
+
+  log "Replace 'bootconfig' by 'uuidconfig'" "info"
+  sed -i "s/bootconfig/uuidconfig/" /boot/boot.ini
+
+  
   if [ "${DEBUG_IMAGE}" == "yes" ]; then
-    log "Configuring DEBUG image" "cfg"
+    log "Configuring DEBUG image" "info"
     sed -i "s/quiet loglevel=0 splash/loglevel=8 nosplash break= use_kmsg=yes/" /boot/env.system.txt
   else
-    log "Configuring default splash image" "cfg"
-    sed -i "s/splash/splash plymouth.ignore-serial-consoles initramfs.clear/" /boot/env.system.txt
+    log "Configuring default kernel parameters" "info"
+    if [ ! -z "${PLYMOUTH_THEME}" ]; then
+      log "Adding splash kernel parameters" "info"
+      plymouth-set-default-theme -R ${PLYMOUTH_THEME}
+      sed -i "s/loglevel=0/loglevel=0 splash plymouth.ignore-serial-consoles initramfs.clear/" /boot/env.system.txt
+    else
+      log "No splash screen, just quiet" "info"
+      sed -i "s/loglevel=0 splash/loglevel=0 nosplash/" /boot/env.system.txt
+    fi  
   fi  
 
   log "Fixing armv8 deprecated instruction emulation, allow dmesg"
@@ -139,8 +160,7 @@ EOF
   log "Adding default wifi"
   echo "dhd" >>"/etc/modules"
 
-  log "Setting plymouth theme to ${PLYMOUTH_THEME}"
-  plymouth-set-default-theme -R ${PLYMOUTH_THEME}
+  
 
   log "Disabling login prompt"
   systemctl disable getty@tty1.service

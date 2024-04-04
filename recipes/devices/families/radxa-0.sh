@@ -41,7 +41,7 @@ write_device_files() {
   log "Running write_device_files" "ext"
 
   if [ ! -z ${PLYMOUTH_THEME} ]; then
-    log "Plymouth selected, adding plymouth-themes to list of packages to install" ""
+    log "Plymouth selected, adding plymouth-label to list of packages to install" ""
     PACKAGES+=("plymouth-label")
     log "Copying selected Volumio ${PLYMOUTH_THEME} theme" "cfg"
     cp -dR "${SRC}/volumio/plymouth/themes/${PLYMOUTH_THEME}" ${ROOTFSMNT}/usr/share/plymouth/themes/${PLYMOUTH_THEME}
@@ -89,8 +89,8 @@ device_chroot_tweaks_pre() {
 
 # Configure kernel parameters, overrule $verbosity in order to keep the template (platform files) untouched
 # Deactivate Armbian bootlogo settings
-  sed -i "s/splash=verbose ${consoleargs}//" /boot/boot.cmd 
-  sed -i "s/splash plymouth.ignore-serial-consoles ${consoleargs}//" /boot/boot.cmd
+  sed -i "s/splash=verbose//" /boot/boot.cmd 
+  sed -i "s/splash plymouth.ignore-serial-consoles//" /boot/boot.cmd
 
   if [ "${DEBUG_IMAGE}" == "yes" ]; then
     log "Configuring DEBUG kernel parameters" "cfg"

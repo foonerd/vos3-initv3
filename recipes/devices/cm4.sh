@@ -18,10 +18,10 @@ DEBUG_IMAGE="no" # yes/no or empty. Also changes SHOW_SPLASH in cmdline.txt
 #VOL_DEVICE_ID="pi"
 DEVICENAME="CM4"
 # This is useful for multiple devices sharing the same/similar kernel
-DEVICEFAMILY="raspberry"
+#DEVICEFAMILY="raspberry"
 
 # Install to disk tools including PiInstaller
-DEVICEREPO="https://github.com/volumio/platform-${DEVICEFAMILY}.git"
+#DEVICEREPO="https://github.com/volumio/platform-${DEVICEFAMILY}.git"
 
 ### What features do we want to target
 # TODO: Not fully implemented
@@ -51,39 +51,12 @@ PACKAGES=( # Bluetooth packages
 	"wiringpi"	
 	# Wireless firmware
 	"firmware-atheros" "firmware-ralink" "firmware-realtek" "firmware-brcm80211"
-	# Install to disk tools
-	"liblzo2-2" "squashfs-tools"
 )
 
 ### Device customisation
 # Copy the device specific files (Image/DTS/etc..)
 write_device_files() {
-	log "Running write_device_files" "ext"
-	log "Copying additional utils files" "ext"
-	pkg_root="${PLTDIR}/utils"
-
-	mkdir -p "${ROOTFSMNT}"/usr/local/bin/
-	declare -A CustomScripts=(
-		[PiInstaller.sh]="/PiInstaller.sh"
-	)
-	log "Adding ${#CustomScripts[@]} custom scripts to /usr/local/bin: " "" "${CustomScripts[@]}" "ext"
-	for script in "${!CustomScripts[@]}"; do
-		cp "${pkg_root}/${CustomScripts[$script]}" "${ROOTFSMNT}"/usr/local/bin/"${script}"
-		chmod +x "${ROOTFSMNT}"/usr/local/bin/"${script}"
-	done
-
-	log "Copying current partition data for use in runtime fast 'installToDisk'" "ext"
-	cat <<-EOF >"${ROOTFSMNT}/boot/partconfig.json"
-		{
-			"params":[
-			{"name":"boot_start","value":"$BOOT_START"},
-			{"name":"boot_end","value":"$BOOT_END"},
-			{"name":"volumio_end","value":"$IMAGE_END"},
-			{"name":"boot_type","value":"$BOOT_TYPE"}
-			]
-		}
-	EOF
-
+	:
 }
 
 write_device_bootloader() {
@@ -193,29 +166,6 @@ device_chroot_tweaks_pre() {
 	MAJOR_VERSION=$(echo "$KERNEL_VERSION" | cut -d '.' -f 1)
 	MINOR_VERSION=$(echo "$KERNEL_VERSION" | cut -d '.' -f 2)
 	PATCH_VERSION=$(echo "$KERNEL_VERSION" | cut -d '.' -f 3)
-
-	# For bleeding edge, check what is the latest on offer
-	# Things *might* break, so you are warned!
-	if [[ ${RPI_USE_LATEST_KERNEL:-no} == yes ]]; then
-		branch=master
-		log "Using bleeding edge Rpi kernel" "info" "$branch"
-		RpiRepo="https://github.com/raspberrypi/rpi-firmware"
-		RpiRepoApi=${RpiRepo/github.com/api.github.com\/repos}
-		RpiRepoRaw=${RpiRepo/github.com/raw.githubusercontent.com}
-		log "Fetching latest kernel details from ${RpiRepo}" "info"
-		RpiGitSHA=$(curl --silent "${RpiRepoApi}/branches/${branch}")
-		readarray -t RpiCommitDetails <<<"$(jq -r '.commit.sha, .commit.commit.message' <<<"${RpiGitSHA}")"
-		log "Rpi latest kernel -- ${RpiCommitDetails[*]}" "info"
-		# Parse required info from `uname_string`
-		uname_string=$(curl --silent "${RpiRepoRaw}/${RpiCommitDetails[0]}/uname_string")
-		RpiKerVer=$(awk '{print $3}' <<<"${uname_string}")
-		KERNEL_VERSION=${RpiKerVer/+/}
-		RpiKerRev=$(awk '{print $1}' <<<"${uname_string##*#}")
-		PI_KERNELS[${KERNEL_VERSION}]+="${RpiCommitDetails[0]}|${branch}|${RpiKerRev}"
-		# Make life easier
-		log "Using rpi-update SHA:${RpiCommitDetails[0]} Rev:${RpiKerRev}" "${KERNEL_VERSION}" "dbg"
-		log "[${KERNEL_VERSION}]=\"${RpiCommitDetails[0]}|${branch}|${RpiKerRev}\"" "dbg"
-	fi
 
 	# List of custom firmware -
 	# github archives that can be extracted directly

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -eo pipefail
 set -o errtrace
@@ -37,12 +37,12 @@ tmpfs           /tmp                 tmpfs   defaults,noatime,mode=0755         
 tmpfs           /dev/shm             tmpfs   defaults,nosuid,noexec,nodev              0 0
 EOF
 
-if [ $BUILD == "armv8" ]; then
+if [ "${BUILD}" == "armv8" ]; then
   log "Adding multiarch support for armv8 to support armhf packages"
   dpkg --add-architecture armhf
 fi
 
-if [ $BUILD == "x64" ]; then
+if [ "${BUILD}" == "x64" ]; then
   log "Adding multiarch support for x64 to support i386  packages"
   dpkg --add-architecture i386
 fi
@@ -62,11 +62,22 @@ ${mod_list}
 EOF
 
 ## Adding board specific packages
-log "Installing ${#PACKAGES[@]} custom packages:" "" "${PACKAGES[*]}"
-apt-get update
-apt-get install -y "${PACKAGES[@]}" --no-install-recommends
+if [[ -n "${PACKAGES[*]}" ]]; then
+  log "Installing ${#PACKAGES[@]} board packages:" "" "${PACKAGES[*]}"
+  apt-get update
+  apt-get install -y "${PACKAGES[@]}" --no-install-recommends
+else
+  log "No board packages specified for install" "wrn"
+fi
 
 # Custom packages for Volumio
+if [[ "${DISABLE_DISPLAY}" == "yes" ]]; then
+  log "Adapting recipe for device with no display capabilities" "cfg"
+  # Remove plymouth-label
+  apt-get remove -y --purge plymouth-label
+  # TODO: Check our kernel parameters has nosplash set.
+fi
+
 #TODO THIS SHALL RUN ONLY FOR SOME DEVICES WHERE WE WANT TO INSTALL KIOSK
 #TODO: This shall happen before configure.sh which substitutes conf files
 [ -f "/install-kiosk.sh" ] && log "Installing kiosk" "info" && bash install-kiosk.sh
@@ -80,6 +91,7 @@ fi
 
 # MPD systemd file
 log "Copying MPD custom systemd file"
+[[ -d /usr/lib/systemd/system/ ]] || mkdir -p /usr/lib/systemd/system/
 ## TODO: FIND A MORE ELEGANT SOLUTION
 echo "[Unit]
 Description=Music Player Daemon
@@ -117,11 +129,10 @@ RestrictNamespaces=yes
 
 [Install]
 WantedBy=multi-user.target
-Also=mpd.socket" > /usr/lib/systemd/system/mpd.service
+Also=mpd.socket" >/usr/lib/systemd/system/mpd.service
 
 log "Disabling MPD Service"
 systemctl disable mpd.service
-
 
 log "Entering device_chroot_tweaks_pre" "cfg"
 device_chroot_tweaks_pre
@@ -133,23 +144,38 @@ apt-get clean
 [[ -d /volumio/customPkgs ]] && rm -r "/volumio/customPkgs"
 [[ -f /install-kiosk.sh ]] && rm "/install-kiosk.sh"
 
+if [[ -n "${PLYMOUTH_THEME}" ]]; then
+  log "Setting plymouth theme to ${PLYMOUTH_THEME}" "info"
+  plymouth-set-default-theme -R "${PLYMOUTH_THEME}"
+fi
+
 # Fix services for tmpfs logs
 log "Ensuring /var/log has right folders and permissions"
 sed -i '/^ExecStart=.*/i ExecStartPre=mkdir -m 700 -p /var/log/samba/cores' /lib/systemd/system/nmbd.service
 # sed -i '/^ExecStart=.*/i ExecStartPre=chmod 700 /var/log/samba/cores' /lib/systemd/system/nmbd.service
 
-# Fix for https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=934540
-# that will not make it into buster
-log "Applying buster specific {n,s}mpd.service PID tweaks"
-sed -i 's|^PIDFile=/var/run/samba/smbd.pid|PIDFile=/run/samba/smbd.pid|' /lib/systemd/system/smbd.service
-sed -i 's|^PIDFile=/var/run/samba/nmbd.pid|PIDFile=/run/samba/nmbd.pid|' /lib/systemd/system/nmbd.service
+log "Checking for ${DISTRO_NAME} sepecific tweaks" "info"
+case "${DISTRO_NAME}" in
+buster)
+  log "Applying {n,s}mbd.service PID tweaks"
+  # Fix for https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=934540
+  # that will not make it into buster
+  sed -i 's|^PIDFile=/var/run/samba/smbd.pid|PIDFile=/run/samba/smbd.pid|' /lib/systemd/system/smbd.service
+  sed -i 's|^PIDFile=/var/run/samba/nmbd.pid|PIDFile=/run/samba/nmbd.pid|' /lib/systemd/system/nmbd.service
+  ;;
+*)
+  log "No ${DISTRO_NAME} specific tweaks to apply!" "wrn"
+  ;;
+esac
 
-# First Boot operations
+#First Boot operations
+log "Signalling the init script to re-size the Volumio data partition"
+touch /boot/resize-volumio-datapart
 
-# On The Fly Patch
+#On The Fly Patch
 #TODO Where should this be called?
 PATCH=$(cat /patch)
-if [ "$PATCH" = "volumio" ]; then
+if [[ "${PATCH}" = "volumio" ]]; then
   log "No Patch To Apply" "wrn"
   rm /patch
 else
@@ -163,7 +189,7 @@ else
       bash "${script}" || {
         status=$?
         log "${script} failed: Err ${status}" "err" "${PATCH}" && exit 10
-        }
+      }
     done
     popd
   else

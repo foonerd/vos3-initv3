@@ -26,13 +26,14 @@ MYVOLUMIO=no
 VOLINITUPDATER=yes
 KIOSKMODE=yes
 KIOSKBROWSER=vivaldi
+PLYMOUTH_THEME="volumio-player"
 
 ## Partition info
 BOOT_START=20
 BOOT_END=148
 BOOT_TYPE=msdos          # msdos or gpt
 BOOT_USE_UUID=yes        # Add UUID to fstab
-INIT_TYPE="initv3" # init.{x86/nextarm/nextarm_tvbox}
+INIT_TYPE="initv3"
 
 # Modules that will be added to intramsfs
 MODULES=("overlay" "overlayfs" "squashfs" "nls_cp437"  "fuse")

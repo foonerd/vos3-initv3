@@ -87,8 +87,6 @@ abi.cp15_barrier=2
 EOF
 
   log "Configure kernel cmdline parameters" "cfg"
-  log "Replace 'bootconfig' parameter and configure UUID data" "info"
-  sed -i "s/bootconfig/uuidconfig/" /boot/armbianEnv.txt
 
   sed -i "s/rootdev=UUID=/rootdev=UUID=${UUID_BOOT}/g" /boot/armbianEnv.txt
   sed -i "s/imgpart=UUID=/imgpart=UUID=${UUID_IMG}/g" /boot/armbianEnv.txt
@@ -96,7 +94,7 @@ EOF
   sed -i "s/datapart=UUID=/datapart=UUID=${UUID_DATA}/g" /boot/armbianEnv.txt
 
   log "Deactivate Armbian bootlogo and consolearg settings" "info"
-  sed -i "s/splash=verbose//" /boot/boot.cmd 
+  sed -i "s/splash=verbose//" /boot/boot.cmd
   sed -i "s/splash plymouth.ignore-serial-consoles//" /boot/boot.cmd
 
   log "Configure debug or default kernel parameters" "cfg"
@@ -109,7 +107,7 @@ EOF
      if [[ -n "${PLYMOUTH_THEME}" ]]; then
       log "Adding splash kernel parameters" "cfg"
       sed -i "s/loglevel=0/loglevel=0 splash plymouth.ignore-serial-consoles initramfs.clear/" /boot/boot.cmd
-    fi    
+    fi
   fi
 
   log "Adding gpio group and udev rules"

@@ -78,7 +78,6 @@ device_chroot_tweaks_pre() {
 
 
   log "Creating boot parameters from template"
-  sed -i "s/bootconfig/uuidconfig/" /boot/armbianEnv.txt
   sed -i "s/imgpart=UUID=/imgpart=UUID=${UUID_IMG}/g" /boot/armbianEnv.txt
   sed -i "s/bootpart=UUID=/bootpart=UUID=${UUID_BOOT}/g" /boot/armbianEnv.txt
   sed -i "s/datapart=UUID=/datapart=UUID=${UUID_DATA}/g" /boot/armbianEnv.txt
@@ -86,10 +85,10 @@ device_chroot_tweaks_pre() {
 # Configure kernel parameters, overrule $verbosity in order to keep the template (platform files) untouched
   if [ "${DEBUG_IMAGE}" == "yes" ]; then
     log "Configuring DEBUG kernel parameters" "cfg"
-    sed -i "s/loglevel=\$verbosity/loglevel=8 nosplash break= use_kmsg=yes/" /boot/boot.cmd
+    sed -i "s/loglevel=\${verbosity}/loglevel=8 nosplash break= use_kmsg=yes/" /boot/boot.cmd
   else
     log "Configuring default kernel parameters" "cfg"
-    sed -i "s/loglevel=\$verbosity/quiet loglevel=0/" /boot/boot.cmd
+    sed -i "s/loglevel=\${verbosity}/quiet loglevel=0/" /boot/boot.cmd
 
     if [[ -n "${PLYMOUTH_THEME}" ]]; then
       log "Adding splash kernel parameters" "cfg"

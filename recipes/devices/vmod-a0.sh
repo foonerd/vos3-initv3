@@ -11,9 +11,6 @@ ARCH="armhf"
 BUILD="armv7"
 UINITRD_ARCH="arm64"
 
-### Build image with initramfs debug info?
-DEBUG_IMAGE="no"       # yes/no or empty. Also changes SHOW_SPLASH in cmdline.txt
-
 ### Device information
 DEVICENAME="VMOD-A0"
 # This is useful for multiple devices sharing the same/similar kernel
@@ -27,6 +24,7 @@ DEVICEREPO="https://github.com/volumio/platform-${DEVICEFAMILY}.git"
 VOLVARIANT=no # Custom Volumio (Motivo/Primo etc)
 MYVOLUMIO=no
 VOLINITUPDATER=yes
+DISABLE_DISPLAY=yes
 
 ## Partition info
 BOOT_START=20

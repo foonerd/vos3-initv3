@@ -337,6 +337,7 @@ device_chroot_tweaks_pre() {
 		force_eeprom_read=0
 		dtparam=audio=off
 		start_x=1
+		otg_mode=1
 		include volumioconfig.txt
 		include userconfig.txt
 	EOF

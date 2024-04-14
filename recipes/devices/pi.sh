@@ -39,7 +39,7 @@ INIT_TYPE="initv3"
 PLYMOUTH_THEME="volumio-player"
 
 # Modules that will be added to initramfs
-MODULES=("overlay" "squashfs" "fuse" "nvme" "nvme_core" "uas")
+MODULES=("fuse" "nls_cp437" "nls_iso8859_1" "nvme" "nvme_core" "overlay" "squashfs" "uas")
 # Packages that will be installed
 PACKAGES=( # Bluetooth packages
 	"bluez" "bluez-firmware" "pi-bluetooth"
@@ -259,6 +259,11 @@ device_chroot_tweaks_pre() {
 		rm -rf /boot/kernel_2712.img
 		rm -rf "/lib/modules/${KERNEL_VERSION}-v8_16k+"
 	fi
+	if [ -d "/lib/modules/${KERNEL_VERSION}-v8-16k+" ]; then
+		log "Removing v8_16k+ (Pi5 16k) Kernel and modules" "info"
+		rm -rf /boot/kernel_2712.img
+		rm -rf "/lib/modules/${KERNEL_VERSION}-v8-16k+"
+	fi
 
 	log "Finished Kernel installation" "okay"
 
@@ -380,6 +385,7 @@ device_chroot_tweaks_pre() {
 		### APPLY CUSTOM PARAMETERS TO userconfig.txt ###
 		[cm4]
 		dtoverlay=dwc2,dr_mode=host
+		otg_mode=1
 		[pi5]
 		dtoverlay=vc4-kms-v3d-pi5
 		# dtparam=uart0_console # Disabled by default
@@ -473,12 +479,12 @@ device_chroot_tweaks_pre() {
 	EOF
 
 	# Rerun depmod for new drivers
-	log "Finalising drivers installation with depmod on ${KERNEL_VERSION}+,-v7+ and -v7l+" "info"
+	log "Finalising drivers installation with depmod on ${KERNEL_VERSION}+,-v7+, v7l+ and v8+" "info"
 	depmod "${KERNEL_VERSION}+"     # Pi 1, Zero, Compute Module
 	depmod "${KERNEL_VERSION}-v7+"  # Pi 2,3 CM3
 	depmod "${KERNEL_VERSION}-v7l+" # Pi 4 CM4
 	depmod "${KERNEL_VERSION}-v8+"  # Pi 4,5 CM4 64bit
-	#depmod "${KERNEL_VERSION}-v8_16k+"  # Pi 4,5 CM4 64bit
+	#depmod "${KERNEL_VERSION}-v8-16k+"  # Pi 4,5 CM4 64bit
 
 	log "Raspi Kernel and Modules installed" "okay"
 

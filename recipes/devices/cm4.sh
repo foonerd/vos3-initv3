@@ -40,7 +40,7 @@ INIT_TYPE="initv3"
 PLYMOUTH_THEME="volumio-player"
 
 # Modules that will be added to initramfs
-MODULES=("overlay" "squashfs" "fuse" "nvme" "nvme_core" "uas")
+MODULES=("fuse" "nls_cp437" "nls_iso8859_1" "nvme" "nvme_core" "overlay" "squashfs" "uas")
 # Packages that will be installed
 PACKAGES=( # Bluetooth packages
 	"bluez" "bluez-firmware" "pi-bluetooth"
@@ -337,7 +337,6 @@ device_chroot_tweaks_pre() {
 		force_eeprom_read=0
 		dtparam=audio=off
 		start_x=1
-		otg_mode=1
 		include volumioconfig.txt
 		include userconfig.txt
 	EOF
@@ -348,9 +347,11 @@ device_chroot_tweaks_pre() {
 		### APPLY CUSTOM PARAMETERS TO userconfig.txt ###
 		display_auto_detect=1
 		enable_uart=1
+		arm_64bit=0
 		dtparam=uart0=on
 		dtparam=uart1=off
 		dtoverlay=dwc2,dr_mode=host
+		otg_mode=1
 		dtoverlay=vc4-kms-v3d,cma-384,audio=off,noaudio=on
 	EOF
 
@@ -436,7 +437,7 @@ device_chroot_tweaks_pre() {
 		depmod "${KERNEL_VERSION}-v7l+" # CM4 with 32bit kernel
 	fi
 	if [ -d "/lib/modules/${KERNEL_VERSION}-v8+" ]; then
-		log "Finalising drivers installation with depmod on ${KERNEL_VERSION}-v7l+"
+		log "Finalising drivers installation with depmod on ${KERNEL_VERSION}-v8+"
 		depmod "${KERNEL_VERSION}-v8+" # CM4 with 64bit kernel
 	fi
 	log "CM4 Kernel and Modules installed" "okay"

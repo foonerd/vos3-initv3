@@ -37,15 +37,21 @@ BOOT_END=96
 BOOT_TYPE=msdos    # msdos or gpt
 BOOT_USE_UUID=yes  # Add UUID to fstab
 INIT_TYPE="initv3"
-PLYMOUTH_THEME="volumio-player"
+
+## Plymouth theme management
+PLYMOUTH_THEME="volumio-player-ccw"	# Choices are: {volumio,volumio-logo,volumio-player}
+INIT_PLYMOUTH_DISABLE="yes"		# yes/no or empty. Removes plymouth initialization in init if "yes" is selected 
+UPDATE_PLYMOUTH_SERVICES="no"	# yes/no or empty. Replaces default plymouth systemd services if "yes" is selected
 
 # Modules that will be added to initramfs
-MODULES=("fuse" "nls_cp437" "nls_iso8859_1" "nvme" "nvme_core" "overlay" "squashfs" "uas")
+MODULES=("drm" "drm_panel_orientation_quirks" "fuse" "nls_cp437" "nls_iso8859_1" "nvme" "nvme_core" "overlay" "panel-ilitek-ili9881c" "squashfs" "uas")
 # Packages that will be installed
 PACKAGES=( # Bluetooth packages
 	"bluez" "bluez-firmware" "pi-bluetooth"
 	# Foundation stuff
 	"raspberrypi-sys-mods"
+	# Framebuffer stuff
+	"fbset"	
 	# "rpi-eeprom"\ Needs raspberrypi-bootloader that we hold back
 	# GPIO stuff
 	"wiringpi"	
@@ -159,6 +165,7 @@ device_chroot_tweaks_pre() {
 		[6.1.64]="01145f0eb166cbc68dd2fe63740fac04d682133e|master|1702"
 		[6.1.69]="ec8e8136d773de83e313aaf983e664079cce2815|master|1710"
 		[6.1.70]="fc9319fda550a86dc6c23c12adda54a0f8163f22|master|1712"
+		[6.1.77]="5fc4f643d2e9c5aa972828705a902d184527ae3f|master|1730"
 	)
 	# Version we want
 	KERNEL_VERSION="5.10.95"
@@ -381,14 +388,13 @@ device_chroot_tweaks_pre() {
 		KERNEL_LOGLEVEL="loglevel=0 nodebug use_kmsg=no" # Default to KERN_EMERG
 	fi
 	kernel_params+=("${SHOW_SPLASH}")
-	kernel_params+=("${KERNEL_QUIET}")
-
 	# Boot screen stuff
 	kernel_params+=("plymouth.ignore-serial-consoles")
 	# Raspi USB controller params
 	# TODO: Check if still required!
 	# Prevent Preempt-RT lock up
 	kernel_params+=("dwc_otg.fiq_enable=1" "dwc_otg.fiq_fsm_enable=1" "dwc_otg.fiq_fsm_mask=0xF" "dwc_otg.nak_holdoff=1")
+	kernel_params+=("${KERNEL_QUIET}")
 	# Output console device and options.
 	kernel_params+=("console=serial0,115200" "console=tty1")
 	# Image params
@@ -451,6 +457,10 @@ device_chroot_tweaks_post() {
 
 # Will be called by the image builder post the chroot, before finalisation
 device_image_tweaks_post() {
-	# log "Running device_image_tweaks_post" "ext"
-	:
+	log "Running device_image_tweaks_post" "ext"
+    # Plymouth systemd services OVERWRITE
+	if [[ "${UPDATE_PLYMOUTH_SERVICES}" == yes ]]; then
+        log "Updating plymouth systemd services" "info"
+        cp -dR "${SRC}"/volumio/framebuffer/systemd/* "${ROOTFSMNT}"/lib/systemd
+	fi
 }

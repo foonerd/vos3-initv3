@@ -44,7 +44,7 @@ INIT_PLYMOUTH_DISABLE="yes"		# yes/no or empty. Removes plymouth initialization 
 UPDATE_PLYMOUTH_SERVICES="no"	# yes/no or empty. Replaces default plymouth systemd services if "yes" is selected
 
 # Modules that will be added to initramfs
-MODULES=("drm" "drm_panel_orientation_quirks" "fuse" "nls_cp437" "nls_iso8859_1" "nvme" "nvme_core" "overlay" "panel-ilitek-ili9881c" "squashfs" "uas")
+MODULES=("drm" "drm_panel_orientation_quirks" "fuse" "nls_cp437" "nls_iso8859_1" "nvme" "nvme_core" "overlay" "panel-ilitek-ili9881c" "panel-waveshare-dsi" "squashfs" "uas")
 # Packages that will be installed
 PACKAGES=( # Bluetooth packages
 	"bluez" "bluez-firmware" "pi-bluetooth"
@@ -177,6 +177,7 @@ device_chroot_tweaks_pre() {
 	# List of custom firmware -
 	# github archives that can be extracted directly
 	declare -A CustomFirmware=(
+		[PiCustom]="https://raw.githubusercontent.com/Darmur/volumio-rpi-custom/main/output/modules-rpi-${KERNEL_VERSION}-custom.tar.gz"
 		[MotivoCustom]="https://github.com/volumio/motivo-drivers/raw/main/output/modules-rpi-${KERNEL_VERSION}-motivo.tar.gz"
 	)
 
@@ -354,7 +355,7 @@ device_chroot_tweaks_pre() {
 		### APPLY CUSTOM PARAMETERS TO userconfig.txt ###
 		display_auto_detect=1
 		enable_uart=1
-		arm_64bit=0
+		arm_64bit=1
 		dtparam=uart0=on
 		dtparam=uart1=off
 		dtoverlay=dwc2,dr_mode=host
@@ -387,6 +388,7 @@ device_chroot_tweaks_pre() {
 		log "Default image: change loglevel to value: 0, nodebug, no break  and no kmsg in cmdline.txt" "cfg"
 		KERNEL_LOGLEVEL="loglevel=0 nodebug use_kmsg=no" # Default to KERN_EMERG
 	fi
+	# Show splash
 	kernel_params+=("${SHOW_SPLASH}")
 	# Boot screen stuff
 	kernel_params+=("plymouth.ignore-serial-consoles")
@@ -394,6 +396,7 @@ device_chroot_tweaks_pre() {
 	# TODO: Check if still required!
 	# Prevent Preempt-RT lock up
 	kernel_params+=("dwc_otg.fiq_enable=1" "dwc_otg.fiq_fsm_enable=1" "dwc_otg.fiq_fsm_mask=0xF" "dwc_otg.nak_holdoff=1")
+	# Hide kernel's stdio
 	kernel_params+=("${KERNEL_QUIET}")
 	# Output console device and options.
 	kernel_params+=("console=serial0,115200" "console=tty1")
